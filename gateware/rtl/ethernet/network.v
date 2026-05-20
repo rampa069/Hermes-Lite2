@@ -190,7 +190,7 @@ always @(negedge clock_2_5MHz)
         if (lease == 32'd0)
           dhcp_renew_timer <= 43_200;  // use 43,200 seconds (12 hours) if no lease time set
         else
-          dhcp_renew_timer <= lease >> 1;  // set timer to half lease time.
+          dhcp_renew_timer <= lease[17:1];
         //    dhcp_renew_timer <= (32'd10 * 2_500_000);     // **** test code - set DHCP renew to 10 seconds ****
         state <= ST_DHCP_RENEW_WAIT;
       end
@@ -260,7 +260,7 @@ always @(negedge clock_2_5MHz)
         if (lease == 32'd0)
           dhcp_renew_timer <= 43_200;  // use 43,200 seconds (12 hours) if no lease time set
         else
-          dhcp_renew_timer <= lease >> 1;  // set timer to half lease time.
+          dhcp_renew_timer <= lease[17:1];
         //  dhcp_renew_timer <= (32'd10 * 2_500_000);     // **** test code - set DHCP renew to 10 seconds ****
         dhcp_timer <= 22'd2_500_000;    // reset dhcp timers for next Renewal
         state <= ST_DHCP_RENEW_WAIT;
@@ -363,6 +363,8 @@ wire arp_tx_request;
 wire arp_tx_active;
 wire [7:0] arp_tx_data;
 wire [47:0] arp_destination_mac;
+
+wire to_ip_is_me;
 
 // icmp in
 assign  icmp_rx_enable = ip_rx_active && rx_is_icmp && to_ip_is_me;
@@ -572,14 +574,19 @@ arp arp_inst (
   .remote_mac     (remote_mac         )
 );
 
+wire        sim_tx_request;
+wire        sim_tx_active;
+wire [ 7:0] sim_tx_data;
+wire [15:0] sim_length;
+
 generate
   if (SIM==1) begin
 
     assign dst_unreachable = 1'b0;
-    assign tx_request = 1'b0;
-    assign tx_active = 1'b0;
-    assign tx_data = 8'h00;
-    assign length = 16'h0000;
+    assign sim_tx_request = 1'b0;
+    assign sim_tx_active = 1'b0;
+    assign sim_tx_data = 8'h00;
+    assign sim_length = 16'h0000;
     assign destination_mac = 48'h00;
     assign destination_ip = 32'h00;
 

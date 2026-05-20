@@ -298,14 +298,14 @@ module fir256(
 
   always @(posedge clock) begin
   if (rst_all) begin
-    counter <= TAPS[ADDRBITS:0] + 4;     // count samples and pipeline latency (delay of 3 clocks from address being presented)
+    counter <= TAPS[ADDRBITS:0] + 8'd4;
     raddr <= waddr;                  // read address -> newest sample
     caddr <= {ADDRBITS{1'b0}};                 // start at coefficient zero
   end else begin
 
     if (we)   // Wait until a new sample is written to memory
       begin
-        counter <= TAPS[ADDRBITS:0] + 4;     // count samples and pipeline latency (delay of 3 clocks from address being presented)
+        counter <= TAPS[ADDRBITS:0] + 8'd4;
         raddr <= waddr;                  // read address -> newest sample
         caddr <= {ADDRBITS{1'b0}};                 // start at coefficient zero
         Raccum <= 0;

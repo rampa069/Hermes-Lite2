@@ -585,7 +585,7 @@ generate case (FAN)
 
     // Fan state machine
     always @ (posedge clk) begin
-      fan_cnt <= fan_cnt + 1;
+      fan_cnt <= fan_cnt + 16'd1;
       if (slow_adc_sample) begin
         fan_state <= fan_state_next;
         tupvote <= tupvote_next;
@@ -644,6 +644,9 @@ generate case (FAN)
             temp_enabletx = 1'b0;
           end
         endcase
+      end else begin
+        fan_output = 1'b0;
+        temp_enabletx = 1'b1;
       end
     end
     
@@ -663,16 +666,16 @@ generate case (FAN)
 	  localparam DAC_VOLT   = 3300;		// Power voltage in mV
 	  localparam DAC_BITS   = 12;
    
-    localparam VOLT_160M  = ( 230*(2**DAC_BITS))/DAC_VOLT;	// Band voltage required in mV
-    localparam VOLT_80M   = ( 460*(2**DAC_BITS))/DAC_VOLT;
-    localparam VOLT_60M   = ( 690*(2**DAC_BITS))/DAC_VOLT;
-    localparam VOLT_40M   = ( 920*(2**DAC_BITS))/DAC_VOLT;
-    localparam VOLT_30M   = (1150*(2**DAC_BITS))/DAC_VOLT;
-    localparam VOLT_20M   = (1380*(2**DAC_BITS))/DAC_VOLT;
-    localparam VOLT_17M   = (1610*(2**DAC_BITS))/DAC_VOLT;
-    localparam VOLT_15M   = (1840*(2**DAC_BITS))/DAC_VOLT;
-    localparam VOLT_12M   = (2070*(2**DAC_BITS))/DAC_VOLT;
-    localparam VOLT_10M   = (2300*(2**DAC_BITS))/DAC_VOLT;
+    localparam [DAC_BITS-1:0] VOLT_160M  = (( 230*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_80M   = (( 460*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_60M   = (( 690*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_40M   = (( 920*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_30M   = ((1150*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_20M   = ((1380*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_17M   = ((1610*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_15M   = ((1840*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_12M   = ((2070*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
+    localparam [DAC_BITS-1:0] VOLT_10M   = ((2300*(2**DAC_BITS))/DAC_VOLT) & ((2**DAC_BITS)-1);
     
     logic band_volts_output = 1'b0;
    				
