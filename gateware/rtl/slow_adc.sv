@@ -164,6 +164,7 @@ always @* begin
       if (sample) next_state = WRITE0;
     end
 
+    default: ;
   endcase
 end
 

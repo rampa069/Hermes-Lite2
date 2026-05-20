@@ -42,7 +42,7 @@ wire       uart_shift = (uart_br_cnt==9'b0);
 
 always @ (posedge clk) 
   if (uart_tx_start | uart_shift)
-    uart_br_cnt <= (CLKFREQ / BAUDRATE) -1 ;
+    uart_br_cnt <= 9'((CLKFREQ / BAUDRATE) - 1) ;
   else
     uart_br_cnt <= uart_br_cnt - 1'b1 ;
 

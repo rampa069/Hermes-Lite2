@@ -281,7 +281,7 @@ always @* begin
         6'h2b: discover_data_next = static_ip[7:0];
         6'h2a: discover_data_next = alt_mac[15:8];
         6'h29: discover_data_next = alt_mac[7:0];
-        6'h28: discover_data_next = master_link_running ? {NR[6:0],1'b0} : NR;
+        6'h28: discover_data_next = 8'(master_link_running ? {NR[6:0],1'b0} : NR);
         6'h27: discover_data_next = {BANDSCOPE_BITS, BOARD[5:0]};
         6'h26: discover_data_next = VERSION_MINOR;
         // Additions mainly for port 1025 communication
@@ -340,7 +340,7 @@ always @* begin
         3'h1: wide_data_next = ep4_seq_no[15:8];
         3'h0: begin
           wide_data_next = ep4_seq_no[7:0];
-          ep4_seq_no_next = ep4_seq_no + 'h1;
+          ep4_seq_no_next = ep4_seq_no + 20'd1;
           state_next = WIDE3;
         end
         default: wide_data_next = 8'hxx;
@@ -385,7 +385,7 @@ always @* begin
         3'h1: udp_data_next = ep6_seq_no[15:8];
         3'h0: begin
           udp_data_next = ep6_seq_no[7:0];
-          ep6_seq_no_next = ep6_seq_no + 'h1;
+          ep6_seq_no_next = ep6_seq_no + 20'd1;
           bs_cnt_next = bs_cnt - 7'd1;
           state_next = SYNC_RESP;
         end

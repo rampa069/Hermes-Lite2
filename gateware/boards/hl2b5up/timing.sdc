@@ -116,6 +116,8 @@ set_false_path -fall_from [get_clocks {clock_ethtxintslow}] -fall_to [get_clocks
 set_false_path -rise_from [get_clocks {clock_ethtxintslow}] -rise_to [get_clocks {clock_txoutputslow}] -hold
 
 set_false_path -from [get_clocks {clock_ethtxintfast}] -to [get_clocks {clock_txoutputslow}]
+
+set_false_path -from [get_clocks {clock_ethtxintfast}] -to [get_clocks {clock_txoutputfast}]
 set_false_path -from [get_clocks {clock_ethtxintslow}] -to [get_clocks {clock_txoutputfast}]
 
 

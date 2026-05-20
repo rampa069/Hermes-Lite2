@@ -86,7 +86,7 @@ output            rffe_ad9866_pga5;
 input   [5:0]     cmd_addr;
 input   [31:0]    cmd_data;
 input             cmd_rqst;
-output            cmd_ack;
+output            cmd_ack = 1'b0;
 
 parameter         FAST_LNA = 0;
 

@@ -130,6 +130,7 @@ parameter       HL2LINK = 0;
 parameter       FAST_LNA = 0; // Support for fast LNA setting, TX/RX values
 
 parameter       AK4951 = 0;
+parameter       VNA = 1;
 parameter       EXTENDED_RESP = 1;
 parameter       EXTENDED_DEBUG_RESP = 0;
 
@@ -301,7 +302,7 @@ logic           hl2_reset;
 logic           qmsec_pulse, qmsec_pulse_ad9866sync;
 logic           msec_pulse, msec_pulse_ethsync;
 
-logic           atu_txinhibit, atu_txinhibit_ad9866ync;
+logic           atu_txinhibit, atu_txinhibit_ad9866sync;
 
 logic        stall_req, stall_req_sync;
 logic        stall_ack, stall_ack_ad9866;
@@ -852,7 +853,8 @@ radio #(
   .NT(NT),
   .LRDATA(LRDATA),
   .CLK_FREQ(CLK_FREQ),
-  .HL2LINK(HL2LINK)
+  .HL2LINK(HL2LINK),
+  .VNA(VNA)
 )
 radio_i
 (

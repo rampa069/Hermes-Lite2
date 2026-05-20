@@ -111,7 +111,7 @@ always @* begin
       tx_freq_next        = 32'h0000;
       //tx_zero_next        = 1'b0;
       vna_counter_next    = 1'd1;
-      vna_decimation_next = DECIMATION;
+      vna_decimation_next = DECIMATION[13:0];
       output_strobe_next  = 1'b0;
       if (vna_count == 1'd0)
         vna_state_next = VNA_PC_SCAN;
@@ -182,7 +182,7 @@ always @* begin
       if (vna_decimation == 1'b0) begin
         vna_I_next          = 1'd0;
         vna_Q_next          = 1'd0;
-        vna_decimation_next = DECIMATION - 1;
+        vna_decimation_next = DECIMATION[13:0] - 14'd1;
         data_counter_next   = 10'd1023;
         if (vna_counter == 0)
           vna_state_next = VNA_ZERO_DATA;
