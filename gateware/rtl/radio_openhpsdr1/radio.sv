@@ -68,7 +68,7 @@ module radio (
 parameter         NR = 3;
 parameter         NT = 1;
 parameter         LRDATA = 0;
-parameter         VNA = 1;
+parameter         VNA = 0;
 parameter         CLK_FREQ = 76800000;
 
 parameter         RECEIVER2 = 0;
@@ -430,6 +430,8 @@ always @ (rx_rate) begin
 end
 
 logic [ 1:0]  tx0_phase_zero;
+logic [31:0]  tx0_phase;
+logic [31:0]  rx0_phase;
 
 wire rx0_strobe;
 wire signed [23:0] rx0_out_I, rx0_out_Q;
@@ -437,7 +439,6 @@ wire signed [23:0] rx0_out_I, rx0_out_Q;
 generate
 if (VNA) begin : VNA1
 
-  logic [31:0]  tx0_phase;
   wire signed [17:0] cordic_data_I, cordic_data_Q;
 
   assign cordic_data_I = mixdata_i[0];
@@ -475,6 +476,7 @@ end else begin : VNA0
   assign rx_data_q[0] = rx0_out_Q;
   assign tx0_phase_zero = 2'b00;
   assign rx0_phase = rx_phase[0];
+  assign tx0_phase = tx_phase0;
 
 end
 endgenerate

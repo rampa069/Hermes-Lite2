@@ -107,7 +107,6 @@ module hermeslite (
     .HL2LINK      (1                                    ),
     .AK4951       (0                                    ),
     .FAST_LNA     (1                                    ),
-    .VNA          (0                                    ),
     .EXTENDED_RESP(1                                    ),
     .EXTENDED_DEBUG_RESP(1                              )
   ) hermeslite_core_i (

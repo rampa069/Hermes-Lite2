@@ -187,7 +187,7 @@ module FirInterp8_1024(
 					rstate <= rAddr;
 					raddr <= waddr;		// read address -> newest sample
 					caddr <= phase;		// start coefficient
-					counter <= NTAPS[9:0] / 10'd8 + 10'd1;	// count samples and pipeline latency
+					counter <= NTAPS / 11'd8 + 1'd1;	// count samples and pipeline latency
 					Raccum <= 1'd0;
 					Iaccum <= 1'd0;
 					Rmult <= 1'd0;
