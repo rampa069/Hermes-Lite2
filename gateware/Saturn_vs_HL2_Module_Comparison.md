@@ -80,7 +80,7 @@
 1. **DONE — Add dithering** using Saturn's `lfsr.v` at CORDIC/FIR truncation points (commit `a6dc715`)
 2. **Add shaped CW envelope** inspired by `cw_key_ramp.v` (BRAM wavetable approach) — blocked: `cw_on`/`tx_on` always 0 in current radio.sv
 3. **DONE — Add TX watchdog** using `activitywatchdog.v` (cancel TX on FIFO starvation) (commit `a6dc715`)
-4. **Use `recv2_cic.v`** as the template for all new CIC implementations (cleanest code with `$clog2`)
+4. **Use `recv2_cic.v`** as the template for all new CIC implementations (cleanest code with `$clog2`) — **Future**: not a drop-in replacement. Needs reset logic added, optional output register stage, wider accumulators (48 vs 43 bits) may increase LE usage at 82% utilization. Low priority.
 5. **Consider `pwm_dac.v`** for any analog control voltage needs
 6. **Consider I2S modules** if audio codec support is expanded beyond AK4951
 7. ~~**Share FIR coefficient ROMs across receivers**~~ — Attempted and reverted. Dual-port M9K overhead negated savings for NR=3. Would only benefit NR>=6 builds. Not worth the added complexity.
