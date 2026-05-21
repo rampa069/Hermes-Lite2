@@ -78,7 +78,7 @@
 ## Refactoring Improvement Opportunities
 
 1. **DONE — Add dithering** using Saturn's `lfsr.v` at CORDIC/FIR truncation points (commit `a6dc715`)
-2. **Add shaped CW envelope** inspired by `cw_key_ramp.v` (BRAM wavetable approach) — TX FSM restored, CW already has level envelope (`tx_cwlevel` ramp). Saturn's BRAM wavetable approach would give smoother shaping. At 93% LEs, needs careful resource management.
+2. **DONE — Add shaped CW envelope** inspired by `cw_key_ramp.v` — Replaced linear `tx_cwlevel` ramp with 256-entry raised cosine ROM (`cw_env_rom.v`). Only +191 LEs, 0 M9Ks. Smooth S-curve eliminates key clicks.
 3. **DONE — Add TX watchdog** using `activitywatchdog.v` (cancel TX on FIFO starvation) (commit `a6dc715`)
 4. **Use `recv2_cic.v`** as the template for all new CIC implementations (cleanest code with `$clog2`) — **Future**: not a drop-in replacement. Needs reset logic added, optional output register stage, wider accumulators (48 vs 43 bits) may increase LE usage at 82% utilization. Low priority.
 5. **Consider `pwm_dac.v`** for any analog control voltage needs
