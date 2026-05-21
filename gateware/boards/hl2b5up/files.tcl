@@ -93,6 +93,9 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/usopenhpsdr1.sv
 set_global_assignment -name VERILOG_FILE ../../rtl/cdc_sync.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sync.v
 
+set_global_assignment -name VERILOG_FILE ../../rtl/lfsr.v
+set_global_assignment -name VERILOG_FILE ../../rtl/tx_watchdog.v
+
 set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/led_flash.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/control.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/cw_basic.sv

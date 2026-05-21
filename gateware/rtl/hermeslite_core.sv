@@ -816,6 +816,24 @@ sync sync_atutxinhibit_ad9866 (
   .sig_out(atu_txinhibit_ad9866sync)
 );
 
+logic watchdog_tx_enable;
+logic dsiq_rd_activity;
+assign dsiq_rd_activity = dsiq_tvalid & dsiq_tready;
+
+tx_watchdog #(.TIMEOUT(153600000)) tx_watchdog_i (
+  .clk(clk_ad9866),
+  .rst(ad9866_rst),
+  .activity(dsiq_rd_activity),
+  .tx_enable(watchdog_tx_enable)
+);
+
+logic watchdog_tx_enable_iosync;
+sync sync_watchdog_io (
+  .clock(clk_ctrl),
+  .sig_in(watchdog_tx_enable),
+  .sig_out(watchdog_tx_enable_iosync)
+);
+
 ad9866 #(.FAST_LNA(FAST_LNA)) ad9866_i (
   .clk(clk_ad9866),
   .clk_2x(clk_ad9866_2x),
@@ -824,8 +842,8 @@ ad9866 #(.FAST_LNA(FAST_LNA)) ad9866_i (
 
   .tx_data(tx_data),
   .rx_data(rx_data),
-  .tx_en(tx_on & ~atu_txinhibit_ad9866sync),
-  .cw_on(cw_on & ~atu_txinhibit_ad9866sync),
+  .tx_en(tx_on & ~atu_txinhibit_ad9866sync & watchdog_tx_enable),
+  .cw_on(cw_on & ~atu_txinhibit_ad9866sync & watchdog_tx_enable),
 
   .rxclip(rxclip),
   .rxgoodlvl(rxgoodlvl),
@@ -1016,6 +1034,7 @@ control #(
   
   .atu_txinhibit      (atu_txinhibit              ),
   .tx_on              (tx_on_iosync               ),
+  .watchdog_enable    (watchdog_tx_enable_iosync   ),
   .cw_on              (cw_on_iosync               ),
   .cw_keydown         (cw_keydown                 ),
   .ext_pttout         (ext_ptt                    ),

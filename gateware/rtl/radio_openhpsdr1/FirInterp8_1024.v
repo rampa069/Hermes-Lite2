@@ -134,9 +134,12 @@ module FirInterp8_1024(
 	reg  [NTAPS_BITS-1:0] caddr;		// read address for coefficient
 	wire signed [17:0] coef;			// 18-bit coefficient read from memory
 	reg  signed [17:0] reg_coef;
-	reg  signed [35:0] Rmult, Imult;	// multiplier result
-	reg  [2:0] phase;						// count 0, 1, ..., 7
-	reg  [9:0] counter;					// count NTAPS/8 samples + latency
+ 	reg  signed [35:0] Rmult, Imult;	// multiplier result
+ 	reg  [2:0] phase;						// count 0, 1, ..., 7
+ 	reg  [9:0] counter;					// count NTAPS/8 samples + latency
+
+ 	wire [7:0] dither;
+ 	lfsr lfsr_i (.clk(clock), .rst(1'b0), .dither(dither));
 
 
 	initial
@@ -214,8 +217,8 @@ module FirInterp8_1024(
 				next_addr;
 				Rmult <= q_real * reg_coef;
 				Imult <= q_imag * reg_coef;
-				Raccum <= Raccum + Rmult[35:12] + Rmult[11];		// Add the most significant bits
-				Iaccum <= Iaccum + Imult[35:12] + Imult[11];
+				Raccum <= Raccum + Rmult[35:12] + {15'b0,dither} + Rmult[11];
+				Iaccum <= Iaccum + Imult[35:12] + {15'b0,dither} + Imult[11];
 				counter <= counter - 1'd1;
 				if (counter == 0)
 				begin
@@ -228,8 +231,8 @@ module FirInterp8_1024(
 				// Coefficients were multiplied by 8
 				//y_real <= Raccum[(ABITS-1-3) -: OBITS];
 				//y_imag <= Iaccum[(ABITS-1-3) -: OBITS];
-				y_real <= Raccum[20:1] + Raccum[1];			// truncate to 20 bits to eliminate DC component
-				y_imag <= Iaccum[20:1] + Iaccum[1];
+				y_real <= Raccum[20:1] + {3'b0,dither[7:1]} + Raccum[1];
+				y_imag <= Iaccum[20:1] + {3'b0,dither[7:1]} + Iaccum[1];
 				if (phase == 3'b111)
 					rstate <= rEnd1;
 				else

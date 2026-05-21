@@ -265,6 +265,9 @@ module fir256(
   reg  we = 1'b0;                          // Internal we on fast clock
   reg  banksel = 1'b0;
 
+  wire [7:0] dither;
+  lfsr lfsr_i (.clk(clock), .rst(rst_all), .dither(dither));
+
   //wire [ADDRBITS-1:0] addr;
 
   //reg fir_step;                   // Pipeline register for fir
@@ -321,13 +324,13 @@ module fir256(
           //if (fir_step)
           //begin
             Rmult <= q_real * reg_coef;
-            Raccum <= Raccum + Rmult[35:12] + {23'b0,Rmult[11]};  // truncate 36 bits down to 24 bits to prevent DC spur
+            Raccum <= Raccum + Rmult[35:12] + {15'b0,dither} + Rmult[11];  // dithered truncation 36->24
             //fir_step <= 1'b0;
           //end
           //else 
           //begin
             Imult <= q_imag * reg_coef;
-            Iaccum <= Iaccum + Imult[35:12] + {23'b0,Imult[11]};
+            Iaccum <= Iaccum + Imult[35:12] + {15'b0,dither} + Imult[11];
             //fir_step <= 1'b1;
           //end
         end

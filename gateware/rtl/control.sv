@@ -25,6 +25,7 @@ module control (
   input                      cmd_requires_resp  ,
   output                     atu_txinhibit      ,
   input                      tx_on              ,
+  input                      watchdog_enable    ,
   input                      cw_on              ,
   output                     cw_keydown         ,
   output                     ext_pttout         ,
@@ -354,7 +355,7 @@ assign io_led_adc100 = (slave_link_running | run) ? led_d5 : ~(ad9866up & good_f
 // Clear status
 always @(posedge clk) rxclrstatus <= ~rxclrstatus;
 
-assign int_tx_on = (tx_on | ext_ptt ) & ~ext_txinhibit & run & temp_enabletx;
+assign int_tx_on = (tx_on | ext_ptt ) & watchdog_enable & ~ext_txinhibit & run & temp_enabletx;
 
 assign pwr_envbias = int_tx_on & ~vna & pa_enable;
 assign pwr_envop = int_tx_on;

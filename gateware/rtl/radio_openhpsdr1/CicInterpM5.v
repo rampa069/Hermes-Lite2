@@ -49,10 +49,14 @@ module CicInterpM5(
     reg signed [CBITS-1:0] s1, s2, s3, s4, s5;  // variables for integrator, imag
 
     wire signed [CBITS-1:0] sxtxr, sxtxi;
-    assign sxtxr = {{(CBITS - IBITS){x_real[IBITS-1]}}, x_real};    // sign extended
+    assign sxtxr = {{(CBITS - IBITS){x_real[IBITS-1]}}, x_real};
     assign sxtxi = {{(CBITS - IBITS){x_imag[IBITS-1]}}, x_imag};
-    assign y_real = y5[CBITS-1 -:OBITS] + y5[(CBITS-1)-OBITS];      // output data  with truncation to remove DC spur
-    assign y_imag = s5[CBITS-1 -:OBITS] + s5[(CBITS-1)-OBITS];
+
+    wire [7:0] cic_dither;
+    lfsr cic_lfsr (.clk(clock), .rst(1'b0), .dither(cic_dither));
+
+    assign y_real = y5[CBITS-1 -:OBITS] + y5[(CBITS-1)-OBITS] + {{(OBITS-8){1'b0}},cic_dither};
+    assign y_imag = s5[CBITS-1 -:OBITS] + s5[(CBITS-1)-OBITS] + {{(OBITS-8){1'b0}},cic_dither};
     
     initial
     begin
