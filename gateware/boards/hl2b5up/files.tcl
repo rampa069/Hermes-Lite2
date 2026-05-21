@@ -22,6 +22,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/FirInterp8_1
 set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/radio_openhpsdr1/firram36.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/radio_openhpsdr1/vna_scanner.sv
 set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/firrom/firromH.v
+set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/cw_env_rom.v
 set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/firrom/firromI_1024.v
 
 set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/FirInterp5_1025_EER.v
