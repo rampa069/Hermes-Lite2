@@ -2,15 +2,15 @@
 
 ## Resource Utilization
 
-| | Original (`7472bd1`) | Fix warnings | Pre-VNA | VNA=0 | Fix warnings+timing | +Dither+Watchdog (`a6dc715`) |
-|---|---|---|---|---|---|---|
-| **LEs** | 20,904 (94%) | 18,398 (82%) | 18,398 (82%) | 17,938 (80%) | 17,938 (80%) | 18,312 (82%) |
-| **Registers** | — | — | 14,104 (63%) | 13,868 (61%) | 13,868 (61%) | 13,903 (62%) |
-| **M9Ks** | — | — | — | — | 31 (47%) | 31 (47%) |
-| **Memory bits** | — | — | 253,968 (42%) | 253,968 (42%) | 253,968 (42%) | 272,400 (45%) |
-| **Mult 9-bit** | — | — | 88 (67%) | 88 (67%) | 88 (67%) | 88 (67%) |
-| **PLLs** | — | — | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) |
-| **Timing worst (85C)** | -0.257 ns | -0.257 ns | -0.257 ns | -0.257 ns | **0.142 ns** | **0.142 ns** |
+| | Original (`7472bd1`) | Fix warnings | Pre-VNA | VNA=0 | Fix warnings+timing | +Dither+Watchdog (`a6dc715`) | +TX Restored |
+|---|---|---|---|---|---|---|---|
+| **LEs** | 20,904 (94%) | 18,398 (82%) | 18,398 (82%) | 17,938 (80%) | 17,938 (80%) | 18,312 (82%) | 20,657 (93%) |
+| **Registers** | — | — | 14,104 (63%) | 13,868 (61%) | 13,868 (61%) | 13,903 (62%) | 16,035 (72%) |
+| **M9Ks** | — | — | — | — | 31 (47%) | 31 (47%) | 52 (79%) |
+| **Memory bits** | — | — | 253,968 (42%) | 253,968 (42%) | 253,968 (42%) | 272,400 (45%) | 424,464 (70%) |
+| **Mult 9-bit** | — | — | 88 (67%) | 88 (67%) | 88 (67%) | 88 (67%) | 92 (70%) |
+| **PLLs** | — | — | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) |
+| **Timing worst (85C)** | -0.257 ns | -0.257 ns | -0.257 ns | -0.257 ns | **0.142 ns** | **0.142 ns** | -0.371 ns |
 
 ## Warnings Status
 
@@ -71,3 +71,14 @@
 - Build succeeded but **M9Ks increased from 31 to 35** (+4) instead of expected decrease
 - Root cause: dual-port ROM overhead in Cyclone IV M9K blocks negated savings for NR=3 (only 3 receivers)
 - **Reverted** to `a6dc715` — not worth the complexity for NR=3
+
+### Build: TX Path Restored
+- **Critical bug found**: commit `bde4c57` (rename .v→.sv refactor) accidentally deleted the entire TX state machine (~262 lines) from `radio.sv`
+  - `tx_on`, `cw_on` were stuck at 0 — no TX output reached the DAC
+  - TX FSM with states `NOTX`→`PRETX`→`PTTTX`/`CWTX`→`CWHANG` was missing
+  - CW carrier generation, PTT hang, CW level envelope all gone
+  - SSB appeared to work only because PA was enabled via `ext_ptt` path, but DAC was silent
+- Restored `radio.sv` from original `7472bd1` with VNA parameter generate block re-applied
+- **Resource impact of TX path**: +2,345 LEs, +2,132 registers, +21 M9Ks, +152K memory bits, +4 multipliers
+- **Timing regression**: -0.371 ns at 85C (vs 0.142 ns without TX) — TX CORDIC path creates critical path on `clock_153p6MHz`
+- At 93% LE utilization, very little headroom remains for additional features

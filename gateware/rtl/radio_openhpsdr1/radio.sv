@@ -116,18 +116,18 @@ input         run                    ;
 input         qmsec_pulse            ;
 input         ext_keydown            ;
 input         ext_ptt                ;
-output        tx_on = 1'b0           ;
-output        cw_on = 1'b0           ;
-output [18:0] cw_profile = 19'd0     ;
+output        tx_on                  ;
+output        cw_on                  ;
+output [18:0] cw_profile             ;
 input         clk_envelope           ;
 output        tx_envelope_pwm_out    ;
 output        tx_envelope_pwm_out_inv;
 input  [31:0] tx_tdata               ;
 input         tx_tlast               ;
-output        tx_tready = 1'b0       ;
+output        tx_tready              ;
 input         tx_tvalid              ;
 input  [ 3:0] tx_tuser               ;
-output        tx_twait = 1'b0        ;
+output        tx_twait               ;
 input  [31:0] lr_tdata               ;
 input  [ 2:0] lr_tid                 ;
 input         lr_tlast               ;
@@ -431,8 +431,6 @@ end
 
 logic [ 1:0]  tx0_phase_zero;
 
-logic [31:0]  rx0_phase;
-
 wire rx0_strobe;
 wire signed [23:0] rx0_out_I, rx0_out_Q;
 
@@ -481,6 +479,8 @@ end else begin : VNA0
 end
 endgenerate
 
+
+  // One receiver minimum
   mix2 #(.CALCTYPE(CALCTYPE)) mix2_0 (
     .clk(clk),
     .clk_2x(clk_2x),
@@ -493,7 +493,6 @@ endgenerate
     .mixdata1_i(mixdata_i[2]),
     .mixdata1_q(mixdata_q[2])
   );
-
   receiver_nco #(.CICRATE(CICRATE)) receiver_0 (
     .rst_all(rst_all),
     .clock(clk),
@@ -898,16 +897,283 @@ logic         req2;
 logic [19:0]  y1_r, y1_i;
 logic [15:0]  y2_r, y2_i;
 
-logic signed [15:0] tx_cordic_i_out = 16'd0;
-logic signed [15:0] tx_cordic_q_out = 16'd0;
+logic signed [15:0] tx_cordic_i_out;
+logic signed [15:0] tx_cordic_q_out;
 
 logic signed [15:0] tx_i;
 logic signed [15:0] tx_q;
 
 logic signed [15:0] txsum;
+logic signed [15:0] txsumq;
+
+logic [ 8:0]  tx_qmsectimer_next, tx_qmsectimer = 9'h00;
+logic [18:0]  tx_cwlevel_next, tx_cwlevel = 19'h0;
+
+logic cwx_keydown;
+logic cwx_keyup;
+logic ptt;
+logic fir_tready;
+
+assign cw_profile = tx_cwlevel;
+
+localparam
+  NOTX      = 3'b000,
+  PTTTX     = 3'b011,
+  PRETX     = 3'b001,
+  CWTX      = 3'b101,
+  CWHANG    = 3'b100;
+//  CWXTX     = 3'b010,
+//  CWXHANG   = 3'b011;
+
+logic [ 2:0] tx_state           = NOTX ;
+logic [ 2:0] tx_state_next             ;
+logic        tx_cw_key                 ;
+logic [ 9:0] cw_hang_time              ;
+logic [10:0] accumdelay                ;
+logic        accumdelay_incr           ;
+logic        accumdelay_decr           ;
+logic        accumdelay_notzero        ;
+logic [ 6:0] tx_buffer_latency  = 7'h14; // Default to 20ms
+logic [ 4:0] ptt_hang_time      = 5'h0c; // Default to 12ms
+logic        ptt_hang_saturated;
+
+assign ptt_hang_saturated = &ptt_hang_time;
+
+localparam MAX_CWLEVEL = 19'h4d800; //(16'h4d80 << 4);
+localparam MIN_CWLEVEL = 19'h0;
+
+always @(posedge clk) begin
+  if (accumdelay_incr) accumdelay <= accumdelay + 1;
+  else if (accumdelay_decr & accumdelay_notzero) accumdelay <= accumdelay -1;
+end
+assign accumdelay_notzero = |accumdelay;
+
+
+always @(posedge clk) begin
+  if (cmd_rqst) begin
+    if (cmd_addr == 6'h10) begin
+      cw_hang_time <= {cmd_data[31:24], cmd_data[17:16]};
+    end else if (cmd_addr == 6'h17) begin
+      tx_buffer_latency <= cmd_data[6:0];
+      ptt_hang_time <= cmd_data[12:8];
+    end else if (cmd_addr == 6'h39 & cmd_data[23]) begin
+      synced_receivers <= cmd_data[21:16];
+    end
+  end
+end
+
+
+// TX run state machine
+always @(posedge clk) begin
+  tx_state      <= run ? tx_state_next : NOTX;
+  tx_qmsectimer <= tx_qmsectimer_next;
+  tx_cwlevel    <= tx_cwlevel_next;
+  tx_fir_i      <= tx_fir_i_next;
+  tx_fir_q      <= tx_fir_q_next;
+end
+
+always @* begin
+  cwx_keyup   = tx_tuser[1] & tx_tvalid;
+  cwx_keydown = tx_tuser[2] & tx_tvalid;
+  ptt         = tx_tuser[3] & tx_tvalid;
+
+
+  tx_state_next      = tx_state;
+  tx_qmsectimer_next = tx_qmsectimer;
+  tx_cwlevel_next    = tx_cwlevel;
+  tx_fir_i_next      = tx_fir_i;
+  tx_fir_q_next      = tx_fir_q;
+
+  tx_on     = 1'b1;
+  cw_on     = 1'b0;
+  tx_cw_key = 1'b0;
+  tx_tready = fir_tready; // Empty FIFO
+
+  tx_twait  = 1'b0;
+
+  accumdelay_incr = 1'b0;
+  accumdelay_decr = 1'b0;
+
+  case (tx_state)
+
+    NOTX : begin
+      tx_fir_i_next      = 16'h00;
+      tx_fir_q_next      = 16'h00;
+      tx_cwlevel_next    = 19'h00;
+      tx_qmsectimer_next = {tx_buffer_latency, 2'b00};
+      tx_on              = 1'b0;
+
+      // Free accumulated samples to maintain time coherency in tape recorder mode
+      accumdelay_decr = ~fir_tready;
+      tx_tready       = accumdelay_notzero | fir_tready;
+
+      if (ext_keydown | ext_ptt | cwx_keydown | cwx_keyup | (ds_cmd_ptt & ptt)) tx_state_next = PRETX;
+    end
+
+    PRETX : begin
+      tx_twait        = 1'b1;
+      tx_tready       = 1'b0; //Stall data to fill FIFO unless in CWX mode
+      accumdelay_incr = fir_tready; // Count samples accumulated
+      if (ext_keydown & ext_ptt) begin
+        tx_qmsectimer_next = 9'h0;
+        tx_state_next = CWTX; // PTT is managing timing of CW key, may need to exit early
+      end else if (tx_qmsectimer != 9'h00) begin
+        if (qmsec_pulse) tx_qmsectimer_next = tx_qmsectimer - 9'h01;
+        if (~(ext_keydown | ext_ptt | cwx_keydown | cwx_keyup | ptt)) tx_state_next = NOTX;
+      end else begin
+        if (ext_keydown) tx_state_next = CWTX;
+        else if (ptt) tx_state_next = PTTTX;
+        else if (cwx_keydown | cwx_keyup) tx_state_next = CWTX;
+        else if (ext_ptt) tx_state_next = PRETX; // Wait as external keyer may have long time before ext_keydown
+        else tx_state_next = NOTX;
+      end
+    end
+
+    PTTTX : begin
+      if (ext_keydown) begin
+        tx_state_next = CWTX;
+      end else if (ptt_hang_saturated & ~ds_cmd_ptt) begin
+        // Immediate exit from transmit, don't empty the buffer
+        tx_state_next = NOTX;
+      end else if (ptt) begin
+        tx_qmsectimer_next = {2'b00, ptt_hang_time, 2'b00};
+        if (fir_tready) begin
+          tx_fir_i_next = tx_tdata[31:16];
+          tx_fir_q_next = tx_tdata[15:0];
+        end
+      end else begin
+        if (tx_qmsectimer != 9'h00) begin
+          if (qmsec_pulse) tx_qmsectimer_next = tx_qmsectimer - 9'h01;
+        end else begin
+          // Exit only if software has sent ds_cmd_ptt or watchdog has expired
+          if (~ptt_hang_saturated) tx_state_next = NOTX;
+        end
+      end
+    end
+
+    CWTX : begin
+      cw_on     = 1'b1;
+      tx_cw_key = 1'b1;
+      if (ext_keydown | cwx_keydown) begin
+        // Shape CW on
+        if (tx_cwlevel != MAX_CWLEVEL) tx_cwlevel_next = tx_cwlevel + 19'h01;
+        tx_qmsectimer_next = (ext_keydown & ext_ptt) ? 9'h0 : {tx_buffer_latency, 2'b00};
+      end else begin
+        // Extend CW on to match tx_buffer_latency if ext key
+        if (tx_qmsectimer != 9'h00) begin
+          if (qmsec_pulse) tx_qmsectimer_next = tx_qmsectimer - 9'h01;
+        end else if (tx_cwlevel != 19'h00) tx_cwlevel_next = tx_cwlevel - 19'h01;
+        else if (~cwx_keyup) begin
+          tx_qmsectimer_next = {tx_buffer_latency, 2'b00};
+          tx_cwlevel_next    = ext_ptt ? 19'h0000 : {7'b0000000, cw_hang_time, 2'b00};
+          tx_state_next      = CWHANG;
+        end
+      end
+    end
+
+    CWHANG : begin
+      cw_on = 1'b1;
+      if (ext_keydown & ext_ptt) begin
+        tx_qmsectimer_next = 9'h0;
+        tx_cwlevel_next    = 19'h0;
+        tx_state_next      = CWTX;
+      end else if (ext_keydown | cwx_keydown) begin
+        // delay ext CW by tx_buffer_latency
+        if (tx_qmsectimer != 9'h00) begin
+          if (qmsec_pulse) tx_qmsectimer_next = tx_qmsectimer - 9'h01;
+        end else begin
+          tx_qmsectimer_next = {tx_buffer_latency, 2'b00};
+          tx_cwlevel_next    = 19'h0;
+          tx_state_next      = CWTX;
+        end
+      end else begin
+        if (tx_cwlevel != 19'h0) begin
+          if (qmsec_pulse) tx_cwlevel_next = tx_cwlevel - 19'h01;
+        end else if (~ext_ptt) begin // ext_ptt can cause hang with CW keyer
+          tx_state_next = NOTX;
+        end
+      end
+    end
+
+
+
+//CWXTX: begin
+//  cw_on = 1'b1;
+//  tx_cw_key = 1'b1;
+//  if (cwx) begin
+//    // Shape CW on
+//    if (tx_cwlevel != MAX_CWLEVEL) tx_cwlevel_next = tx_cwlevel + 19'h01;
+//  end else begin
+//    if (tx_cwlevel != 19'h00) tx_cwlevel_next = tx_cwlevel - 19'h01;
+//    else begin
+//      tx_cwlevel_next = {7'b0000000, cw_hang_time, 2'b00};
+//      tx_state_next = CWXHANG;
+//    end
+//  end
+//end
+
+//CWXHANG: begin
+//  cw_on = 1'b1;
+//  if (cwx) begin
+//    tx_state_next = CWXTX;
+//  end else begin
+//    if (tx_cwlevel != 19'h0) begin
+//      if (qmsec_pulse) tx_cwlevel_next = tx_cwlevel - 19'h01;
+//    end else begin
+//      tx_state_next = NOTX;
+//    end
+//  end
+//end
+
+    default: begin
+      tx_state_next = NOTX;
+    end
+
+
+  endcase
+end
+
+// Interpolate I/Q samples from 48 kHz to the clock frequency
+FirInterp8_1024 fi (clk, req2, fir_tready, tx_fir_i, tx_fir_q, y1_r, y1_i);  // req2 enables an output sample, tx_tready requests next input sample.
+
+// GBITS reduced to 30
+CicInterpM5 #(.RRRR(RRRR), .IBITS(20), .OBITS(16), .GBITS(GBITS)) in2 ( clk, 1'd1, req2, y1_r, y1_i, y2_r, y2_i);
+
+//---------------------------------------------------------
+//    CORDIC NCO
+//---------------------------------------------------------
+
+// Code rotates input at set frequency and produces I & Q
+assign tx_i = vna ? 16'h4d80 : (tx_cw_key ? {1'b0, tx_cwlevel[18:4]} : y2_i);    // select vna mode if active. Set CORDIC for max DAC output
+assign tx_q = (vna | tx_cw_key) ? 16'h0 : y2_r;                   // taking into account CORDICs gain i.e. 0x7FFF/1.7
+
+
+// NOTE:  I and Q inputs reversed to give correct sideband out
+cpl_cordic #(.OUT_WIDTH(16)) cordic_inst (
+  .clock(clk),
+  .frequency(tx0_phase),
+  .in_data_I(tx_i),
+  .in_data_Q(tx_q),
+  .out_data_I(tx_cordic_i_out),
+  .out_data_Q(tx_cordic_q_out)
+);
+
+/*
+  We can use either the I or Q output from the CORDIC directly to drive the DAC.
+
+    exp(jw) = cos(w) + j sin(w)
+
+  When multplying two complex sinusoids f1 and f2, you get only f1 + f2, no
+  difference frequency.
+
+      Z = exp(j*f1) * exp(j*f2) = exp(j*(f1+f2))
+        = cos(f1 + f2) + j sin(f1 + f2)
+*/
+
 
 //gain of 4
 assign txsum = (tx_cordic_i_out  >>> 2); // + {15'h0000, tx_cordic_i_out[1]};
+assign txsumq = (tx_cordic_q_out  >>> 2);
 
 
 // LFSR for dither
@@ -927,8 +1193,6 @@ case (LRDATA)
       tx_data_dac <= txsum[11:0]; // + {10'h0,lfsr[2:1]};
   end
   1: begin: PD1 // TX predistortion
-    logic signed [15:0] txsumq;
-    assign txsumq = (tx_cordic_q_out  >>> 2);
     // apply amplitude & phase linearity correction
 
     /*
