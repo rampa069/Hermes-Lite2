@@ -75,15 +75,24 @@
 
 ---
 
-## Refactoring Improvement Opportunities
+## Status: v74.3 — All planned improvements complete or deferred
 
-1. **DONE — Add dithering** using Saturn's `lfsr.v` at CORDIC/FIR truncation points (commit `a6dc715`)
-2. **DONE — Add shaped CW envelope** inspired by `cw_key_ramp.v` — Replaced linear `tx_cwlevel` ramp with 256-entry raised cosine ROM (`cw_env_rom.v`). Only +191 LEs, 0 M9Ks. Smooth S-curve eliminates key clicks.
-3. **DONE — Add TX watchdog** using `activitywatchdog.v` (cancel TX on FIFO starvation) (commit `a6dc715`)
-4. **Use `recv2_cic.v`** as the template for all new CIC implementations (cleanest code with `$clog2`) — **Future**: not a drop-in replacement. Needs reset logic added, optional output register stage, wider accumulators (48 vs 43 bits) may increase LE usage at 82% utilization. Low priority.
-5. **Consider `pwm_dac.v`** for any analog control voltage needs
-6. **Consider I2S modules** if audio codec support is expanded beyond AK4951
-7. ~~**Share FIR coefficient ROMs across receivers**~~ — Attempted and reverted. Dual-port M9K overhead negated savings for NR=3. Would only benefit NR>=6 builds. Not worth the added complexity.
+### Completed (shipped in v74.3)
+1. **LFSR dithering** — `rtl/lfsr.v` integrated into `firfilt.v`, `FirInterp8_1024.v`, `CicInterpM5.v`
+2. **CW raised cosine envelope** — `cw_env_rom.v` (256x16 ROM) replaces linear ramp in `radio.sv`
+3. **TX watchdog** — `rtl/tx_watchdog.v` (~2s timeout), gates TX at multiple points
+
+### Deferred (not feasible at 93% LEs)
+4. **CIC unification** with `recv2_cic.v` — needs reset logic, wider accumulators, risk of increased LEs
+5. **FIR coefficient ROM sharing** — attempted and reverted, dual-port M9K overhead negated savings
+6. **FIR256 pipeline for timing** — violation is preexisting (-0.353 ns at 85C only), pipelining would cost ~1,150 LEs (78% of remaining budget)
+7. **PWM DAC / I2S** — optional future features
+
+### Timing (unchanged from original)
+- Setup violation: -0.353 ns on `clock_153p6MHz` (FIR256 `reg_q → Imult`, RECEIVER3.BF) at 85C only
+- At 0C: +0.430 ns slack (passes)
+- Hold: no violations
+- This is a preexisting limitation of the 18×18 LE-based multiplier at 153.6 MHz
 
 ---
 

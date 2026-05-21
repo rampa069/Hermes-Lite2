@@ -2,7 +2,7 @@
 
 ## Resource Utilization
 
-| | Original (`7472bd1`) | Fix warnings | Pre-VNA | VNA=0 | Fix warnings+timing | +Dither+Watchdog (`a6dc715`) | +TX Restored | +CW Raised Cosine |
+| | Original (`7472bd1`) | Fix warnings | Pre-VNA | VNA=0 | Fix warnings+timing | +Dither+Watchdog (`a6dc715`) | +TX Restored | +CW Raised Cosine (`v74.3`) |
 |---|---|---|---|---|---|---|---|---|
 | **LEs** | 20,904 (94%) | 18,398 (82%) | 18,398 (82%) | 17,938 (80%) | 17,938 (80%) | 18,312 (82%) | 20,657 (93%) | 20,848 (93%) |
 | **Registers** | — | — | 14,104 (63%) | 13,868 (61%) | 13,868 (61%) | 13,903 (62%) | 16,035 (72%) | 16,035 (72%) |
@@ -11,6 +11,7 @@
 | **Mult 9-bit** | — | — | 88 (67%) | 88 (67%) | 88 (67%) | 88 (67%) | 92 (70%) | 92 (70%) |
 | **PLLs** | — | — | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) |
 | **Timing worst (85C)** | -0.257 ns | -0.257 ns | -0.257 ns | -0.257 ns | **0.142 ns** | **0.142 ns** | -0.371 ns | -0.353 ns |
+| **Version** | 74.2 | 74.2 | 74.2 | 74.2 | 74.2 | 74.2 | 74.2 | **74.3** |
 
 ## Warnings Status
 
@@ -83,9 +84,10 @@
 - **Timing regression**: -0.371 ns at 85C (vs 0.142 ns without TX) — TX CORDIC path creates critical path on `clock_153p6MHz`
 - At 93% LE utilization, very little headroom remains for additional features
 
-### Build: +CW Raised Cosine Envelope
+### Build: +CW Raised Cosine Envelope (v74.3)
 - Added `rtl/radio_openhpsdr1/cw_env_rom.v` — 256x16 raised cosine lookup table
 - Replaced linear ramp (`tx_cwlevel[18:4]`) with ROM lookup (`cw_env[14:0]`) indexed by `tx_cwlevel[18:11]`
 - ROM implemented in LEs by Quartus (no M9K increase)
 - Result: +191 LEs (93%), M9Ks unchanged, timing improved slightly (-0.371 → -0.353 ns)
 - Raised cosine shape: smooth S-curve ramp up/down ~4ms, reduces key clicks and spectral splatter
+- Version bumped: 74.2 → 74.3
