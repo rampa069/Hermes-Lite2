@@ -2,16 +2,15 @@
 
 ## Resource Utilization
 
-| | Original (`7472bd1`) | Fix warnings | Pre-VNA | VNA=0 | Fix warnings+timing |
-|---|---|---|---|---|---|
-| **LEs** | 20,904 (94%) | 18,398 (82%) | 18,398 (82%) | 17,938 (80%) | 17,938 (80%) |
-| **Registers** | — | — | 14,104 (63%) | 13,868 (61%) | 13,868 (61%) |
-| **Memory bits** | — | — | 253,968 / 608,256 (42%) | 253,968 / 608,256 (42%) | 253,968 (42%) |
-| **Mult 9-bit** | — | — | 88 / 132 (67%) | 88 / 132 (67%) | 88 (67%) |
-| **PLLs** | — | — | 2 / 4 (50%) | 2 / 4 (50%) | 2 (50%) |
-| **Timing worst (85C)** | -0.257 ns | -0.257 ns | -0.257 ns | -0.257 ns | **0.142 ns** |
-| **Timing 153.6MHz** | 0.106 ns | 0.106 ns | 0.106 ns | 0.111 ns | 0.142 ns |
-| **Timing ethrxintfast** | 0.118-0.244 ns | — | 0.022 ns | 0.022 ns | — |
+| | Original (`7472bd1`) | Fix warnings | Pre-VNA | VNA=0 | Fix warnings+timing | +Dither+Watchdog (`a6dc715`) |
+|---|---|---|---|---|---|---|
+| **LEs** | 20,904 (94%) | 18,398 (82%) | 18,398 (82%) | 17,938 (80%) | 17,938 (80%) | 18,312 (82%) |
+| **Registers** | — | — | 14,104 (63%) | 13,868 (61%) | 13,868 (61%) | 13,903 (62%) |
+| **M9Ks** | — | — | — | — | 31 (47%) | 31 (47%) |
+| **Memory bits** | — | — | 253,968 (42%) | 253,968 (42%) | 253,968 (42%) | 272,400 (45%) |
+| **Mult 9-bit** | — | — | 88 (67%) | 88 (67%) | 88 (67%) | 88 (67%) |
+| **PLLs** | — | — | 2 (50%) | 2 (50%) | 2 (50%) | 2 (50%) |
+| **Timing worst (85C)** | -0.257 ns | -0.257 ns | -0.257 ns | -0.257 ns | **0.142 ns** | **0.142 ns** |
 
 ## Warnings Status
 
@@ -57,3 +56,18 @@
 - `hermeslite.v`: `.VNA(0)` disables VNA scanner
 - Result: 18,398 -> 17,938 LEs (-460), 14,104 -> 13,868 registers (-236)
 - VNA scanner saved only 460 LEs (less than expected — most logic was already optimized)
+
+### Build: +Dither+Watchdog (`a6dc715`)
+- Added `rtl/lfsr.v` — 23-bit LFSR dither module (8-bit output)
+- Integrated LFSR dithering into `firfilt.v` (RX FIR MAC 36→24), `FirInterp8_1024.v` (TX FIR MAC 36→24 and 24→20), `CicInterpM5.v` (TX CIC output truncation)
+- Added `rtl/tx_watchdog.v` — 32-bit counter, 153.6M cycle timeout (~2s @ 76.8MHz), monitors TX FIFO read activity
+- Integrated watchdog in `hermeslite_core.sv` — gates `tx_en`/`cw_on` in AD9866 domain, CDC sync to `clk_ctrl`, gates `int_tx_on` in `control.sv`
+- Result: 17,938 -> 18,312 LEs (+374), 13,868 -> 13,903 registers (+35), M9Ks unchanged at 31, memory bits 253,968 -> 272,400 (+18,432 from FIR coefficient ROM data)
+- Timing unchanged (worst slack 0.142 ns at 85C on clock_153p6MHz)
+
+### Build: Shared FIR ROMs (attempted, reverted)
+- Attempted to share FIR coefficient ROMs across receivers using dual-port M9K (`firromH_dual.v`)
+- Modified `firfilt.v`, `receiver_nco.v`, `radio.sv` to add `SHARED_ROM` parameter and external coefficient ports
+- Build succeeded but **M9Ks increased from 31 to 35** (+4) instead of expected decrease
+- Root cause: dual-port ROM overhead in Cyclone IV M9K blocks negated savings for NR=3 (only 3 receivers)
+- **Reverted** to `a6dc715` — not worth the complexity for NR=3

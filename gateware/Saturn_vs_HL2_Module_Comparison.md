@@ -77,13 +77,13 @@
 
 ## Refactoring Improvement Opportunities
 
-1. **Add dithering** using Saturn's `lfsr.v` at CORDIC/FIR truncation points
-2. **Add shaped CW envelope** inspired by `cw_key_ramp.v` (BRAM wavetable approach)
-3. **Add TX watchdog** using `activitywatchdog.v` (cancel TX on FIFO starvation)
+1. **DONE — Add dithering** using Saturn's `lfsr.v` at CORDIC/FIR truncation points (commit `a6dc715`)
+2. **Add shaped CW envelope** inspired by `cw_key_ramp.v` (BRAM wavetable approach) — blocked: `cw_on`/`tx_on` always 0 in current radio.sv
+3. **DONE — Add TX watchdog** using `activitywatchdog.v` (cancel TX on FIFO starvation) (commit `a6dc715`)
 4. **Use `recv2_cic.v`** as the template for all new CIC implementations (cleanest code with `$clog2`)
 5. **Consider `pwm_dac.v`** for any analog control voltage needs
 6. **Consider I2S modules** if audio codec support is expanded beyond AK4951
-7. **Share FIR coefficient ROMs across receivers** — Currently each of the 4 receivers instantiates its own `firromH` (256x18, 4608 bits) for each of 4 sub-filter banks (AE/BF/CG/DH), totaling 16 ROM instances (~73K bits). Since all receivers use identical coefficients (`coefL4AE/BF/CG/DH.mif`), these could be shared via a single set of ROMs with multi-port access or time-multiplexed reads. This would save ~8-12 M9K blocks (25-38% of total BRAM). Current BRAM usage: 31/66 M9Ks (47%), with FIR consuming ~87% of all block memory bits (147K RAM + 74K ROM of 254K total)
+7. ~~**Share FIR coefficient ROMs across receivers**~~ — Attempted and reverted. Dual-port M9K overhead negated savings for NR=3. Would only benefit NR>=6 builds. Not worth the added complexity.
 
 ---
 
