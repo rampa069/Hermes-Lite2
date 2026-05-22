@@ -113,6 +113,8 @@ class RX:
       ready = select.select([self.sock], [], [], 2.0)
       if ready[0]:
         data, ip_port = self.sock.recvfrom(1032)
+        if len(data) < 1032:
+          continue
         k = sample
         for base in [16,528]:
           for j in range(base,base+504,14):
@@ -122,8 +124,8 @@ class RX:
             q1 = -100*(int.from_bytes(q1, byteorder='big', signed=True))/8388607.0
             i2 = 100*(int.from_bytes(i2, byteorder='big', signed=True))/8388607.0
             q2 = -100*(int.from_bytes(q2, byteorder='big', signed=True))/8388607.0
-            self.iq[0][k] = np.complex(i1,q1)
-            self.iq[1][k] = np.complex(i2,q2)
+            self.iq[0][k] = complex(i1,q1)
+            self.iq[1][k] = complex(i2,q2)
             self.maxv = max(abs(i1),abs(q1),abs(i2),abs(q2),self.maxv)
             k += 1
         return
