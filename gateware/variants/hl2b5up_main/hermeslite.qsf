@@ -38,6 +38,17 @@
 
 set_global_assignment -name VERILOG_MACRO "BETA5=1"
 set_global_assignment -name VERILOG_MACRO "USE_ALTSYNCRAM=1"
+set_global_assignment -name VERILOG_MACRO "HL2_NR=4"
+set_global_assignment -name VERILOG_MACRO "HL2_NT=1"
+set_global_assignment -name VERILOG_MACRO "HL2_UART=1"
+set_global_assignment -name VERILOG_MACRO "HL2_ATU=1"
+set_global_assignment -name VERILOG_MACRO "HL2_FAN=1"
+set_global_assignment -name VERILOG_MACRO "HL2_CW=1"
+set_global_assignment -name VERILOG_MACRO "HL2_HL2LINK=1"
+set_global_assignment -name VERILOG_MACRO "HL2_AK4951=0"
+set_global_assignment -name VERILOG_MACRO "HL2_EXTENDED_DEBUG_RESP=1"
+set_global_assignment -name VERILOG_MACRO "HL2_BYPASS_VERSA=0"
+set_global_assignment -name VERILOG_MACRO "CW_ENV_ROM=1"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY build
 source ../../boards/hl2b5up/general.tcl
 source ../../boards/hl2b5up/pins.tcl
@@ -47,9 +58,8 @@ source ../../boards/hl2b5up/configurable_io.tcl
 source ../../boards/hl2b5up/location.tcl
 source ../../boards/hl2b5up/files.tcl
 set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/receiver_nco.v
-set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/cw_env_rom.v
 
-set_global_assignment -name VERILOG_FILE ./hermeslite.v
+set_global_assignment -name VERILOG_FILE ../../rtl/hermeslite.v
 set_global_assignment -name TOP_LEVEL_ENTITY hermeslite
 set_global_assignment -name SDC_FILE ../../boards/hl2b5up/timing.sdc
 set_global_assignment -name NUM_PARALLEL_PROCESSORS 4

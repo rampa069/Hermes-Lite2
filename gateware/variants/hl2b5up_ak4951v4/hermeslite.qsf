@@ -39,6 +39,18 @@
 set_global_assignment -name VERILOG_MACRO "BETA5=1"
 set_global_assignment -name VERILOG_MACRO "USE_ALTSYNCRAM=1"
 set_global_assignment -name VERILOG_MACRO "AK4951=1"
+set_global_assignment -name VERILOG_MACRO "HL2_NR=4"
+set_global_assignment -name VERILOG_MACRO "HL2_NT=1"
+set_global_assignment -name VERILOG_MACRO "HL2_UART=1"
+set_global_assignment -name VERILOG_MACRO "HL2_ATU=1"
+set_global_assignment -name VERILOG_MACRO "HL2_FAN=0"
+set_global_assignment -name VERILOG_MACRO "HL2_CW=2"
+set_global_assignment -name VERILOG_MACRO "HL2_HL2LINK=0"
+set_global_assignment -name VERILOG_MACRO "HL2_AK4951=1"
+set_global_assignment -name VERILOG_MACRO "HL2_EXTENDED_DEBUG_RESP=0"
+set_global_assignment -name VERILOG_MACRO "HL2_BYPASS_VERSA=0"
+set_global_assignment -name VERILOG_MACRO "HL2_ATU_AK4951=1"
+set_global_assignment -name VERILOG_MACRO "CW_ENV_ROM=1"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY build
 source ../../boards/hl2b5up/general.tcl
 source ../../boards/hl2b5up/pins.tcl
@@ -153,7 +165,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/receiver_nco
 set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/localaudio/localaudio.sv
 set_global_assignment -name VERILOG_FILE ../../rtl/localaudio/cw_sidetone.v
 set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/localaudio/i2s_ak4951.sv
-set_global_assignment -name VERILOG_FILE ./hermeslite.v
+set_global_assignment -name VERILOG_FILE ../../rtl/hermeslite.v
 set_global_assignment -name SDC_FILE ../../boards/hl2b5up/timing_ak4951.sdc
 set_global_assignment -name QIP_FILE ../../rtl/localaudio/sin1k9r.qip
 set_global_assignment -name QIP_FILE ../../rtl/localaudio/mult_s9_s8_s16.qip

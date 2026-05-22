@@ -905,8 +905,10 @@ logic signed [15:0] tx_cordic_q_out;
 logic signed [15:0] tx_i;
 logic signed [15:0] tx_q;
 
+`ifdef CW_ENV_ROM
 wire [15:0] cw_env;
 cw_env_rom cw_env_rom_i (.addr(tx_cwlevel[18:11]), .data(cw_env));
+`endif
 
 logic signed [15:0] txsum;
 logic signed [15:0] txsumq;
@@ -1149,7 +1151,11 @@ CicInterpM5 #(.RRRR(RRRR), .IBITS(20), .OBITS(16), .GBITS(GBITS)) in2 ( clk, 1'd
 //---------------------------------------------------------
 
 // Code rotates input at set frequency and produces I & Q
+`ifdef CW_ENV_ROM
 assign tx_i = vna ? 16'h4d80 : (tx_cw_key ? {1'b0, cw_env[14:0]} : y2_i);
+`else
+assign tx_i = vna ? 16'h4d80 : (tx_cw_key ? {1'b0, tx_cwlevel[18:4]} : y2_i);
+`endif
 assign tx_q = (vna | tx_cw_key) ? 16'h0 : y2_r;                   // taking into account CORDICs gain i.e. 0x7FFF/1.7
 
 
