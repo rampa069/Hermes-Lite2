@@ -12,7 +12,7 @@
 
 #include <string>
 
-#include <hl2.h>
+#include "hl2.h"
 
 //#define CFG_BIAS_BUTTONS
 //#define CFG_FLATNESS_BUTTON

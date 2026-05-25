@@ -38,6 +38,16 @@
 
 set_global_assignment -name VERILOG_MACRO "BETA3=1"
 set_global_assignment -name VERILOG_MACRO "USE_ALTSYNCRAM=1"
+set_global_assignment -name VERILOG_MACRO "HL2_NR=10"
+set_global_assignment -name VERILOG_MACRO "HL2_NT=0"
+set_global_assignment -name VERILOG_MACRO "HL2_UART=0"
+set_global_assignment -name VERILOG_MACRO "HL2_ATU=0"
+set_global_assignment -name VERILOG_MACRO "HL2_FAN=1"
+set_global_assignment -name VERILOG_MACRO "HL2_CW=0"
+set_global_assignment -name VERILOG_MACRO "HL2_HL2LINK=0"
+set_global_assignment -name VERILOG_MACRO "HL2_AK4951=0"
+set_global_assignment -name VERILOG_MACRO "HL2_EXTENDED_DEBUG_RESP=0"
+set_global_assignment -name VERILOG_MACRO "HL2_BYPASS_VERSA=0"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY build
 source ../../boards/hl2b3to4/general.tcl
 source ../../boards/hl2b3to4/pins.tcl
@@ -49,9 +59,9 @@ source ../../boards/hl2b3to4/location_10rx.tcl
 source ../../boards/hl2b3to4/files.tcl
 set_global_assignment -name VERILOG_FILE ../../rtl/radio_openhpsdr1/receiver_ciconly.v
 
-set_global_assignment -name VERILOG_FILE ./hermeslite.v
+set_global_assignment -name VERILOG_FILE ../../rtl/hermeslite.v
 set_global_assignment -name TOP_LEVEL_ENTITY hermeslite
 set_global_assignment -name SDC_FILE ../../boards/hl2b3to4/timing.sdc
 
-set_global_assignment -name LAST_QUARTUS_VERSION "20.1.1 Lite Edition"
+set_global_assignment -name LAST_QUARTUS_VERSION "23.1std.1 Lite Edition"
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

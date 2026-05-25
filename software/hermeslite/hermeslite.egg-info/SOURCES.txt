@@ -1,0 +1,7 @@
+README.md
+setup.py
+hermeslite.egg-info/PKG-INFO
+hermeslite.egg-info/SOURCES.txt
+hermeslite.egg-info/dependency_links.txt
+hermeslite.egg-info/requires.txt
+hermeslite.egg-info/top_level.txt

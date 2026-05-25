@@ -571,18 +571,20 @@ generate case (FAN)
                FAN_FULLSPEED    = 3'b010,
                FAN_OVERHEAT     = 3'b110;
 					
-    logic band_volts_enabled = 1'b0;					
-
+    logic band_volts_enabled = 1'b0;
+`ifdef HL2_BANDV_YAESU
+    always @(posedge clk) band_volts_enabled <= 1'b1;
+`else
+    always @(posedge clk)
+      if (cmd_rqst & (cmd_addr == 6'h00))
+        band_volts_enabled <= cmd_data[11];
+`endif
     logic fan_output = 1'b0;
     logic [15:0] fan_cnt;
     logic [2:0] fan_state_next, fan_state = FAN_OFF;
     logic [1:0] tupvote_next, tupvote;
-    logic [1:0] tdnvote_next, tdnvote;
-	 
-	 always @(posedge clk)
-      if (cmd_rqst & (cmd_addr == 6'h00))
-        band_volts_enabled <= cmd_data[11];
-
+     logic [1:0] tdnvote_next, tdnvote;
+ 	 
     // Fan state machine
     always @ (posedge clk) begin
       fan_cnt <= fan_cnt + 16'd1;

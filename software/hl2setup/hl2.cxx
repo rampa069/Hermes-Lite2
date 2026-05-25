@@ -33,7 +33,7 @@ static int cleanupWSA = 0;			// Must we call WSACleanup() ?
 #define close__socket	close
 #endif
 
-#include <hl2.h>
+#include "hl2.h"
 
 static int rx_discover_socket = INVALID_SOCKET;		// Socket used to discover the hardware
 static int rx_udp_socket = INVALID_SOCKET;		// Socket for receiving ADC samples from UDP
@@ -690,7 +690,7 @@ static int CheckResult(const char * msg, double result, double target, double to
 		if (verbose_output) std::cout << output + "\n";
 	}
 	tests_failed++;
-	
+	return 1;
 }
 
 void QuiskSleepMicrosec(int usec)
