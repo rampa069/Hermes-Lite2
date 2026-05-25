@@ -263,7 +263,11 @@ wire [3:0] debug;
     .io_uart_txd               (),
     .io_uart_rxd               (io_db1_2),
   `elsif AK4951
+    `ifdef HL2_BANDV_YAESU
+    .io_uart_txd               (),
+    `else
     .io_uart_txd               (io_db1_3),
+    `endif
     .io_uart_rxd               (1'b0),
   `else
     .io_uart_txd               (io_db1_3),
@@ -301,7 +305,11 @@ wire [3:0] debug;
 `endif
 `ifdef BETA5
   `ifdef AK4951
+    `ifdef HL2_BANDV_YAESU
+    .fan_pwm                   (io_db1_3),
+    `else
     .fan_pwm                   (),
+    `endif
   `elsif HL2_DEBUG_4000
     .fan_pwm                   (),
   `else
@@ -310,8 +318,13 @@ wire [3:0] debug;
 `else
     .fan_pwm                   (io_cn4_6),
 `endif
+`ifdef AK4951
+    .linkrx                    (),
+    .linktx                    (),
+`else
     .linkrx                    (io_link_rx),
     .linktx                    (io_link_tx),
+`endif
 `ifdef AK4951
     .pa_exttr_clone            (io_db1_5),
     .io_ptt_in                 (io_db1_4),

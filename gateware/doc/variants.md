@@ -18,6 +18,8 @@ Each variant is configured exclusively through its QSF file via `VERILOG_MACRO` 
 | hl2b5up_ak4951v3 | BETA5 | EP4CE22E22C8 | 4 | 1 | 1 | 0 | 1 | 2 | 0 | 1 | 0 | 0 | receiver_nco | AK4951 audio codec V3 |
 | hl2b5up_ak4951v4 | BETA5 | EP4CE22E22C8 | 4 | 1 | 1 | 1 | 0 | 2 | 0 | 1 | 0 | 0 | receiver_nco | AK4951 V4 + ATU |
 | hl2b5up_bypassversa | BETA5 | EP4CE22E22C8 | 4 | 1 | 1 | 1 | 1 | 1 | 1 | 0 | 1 | 1 | receiver_nco | Bypass Versa clocking |
+| hl2b5up_ak4951v3_yaesu | BETA5 | EP4CE22E22C8 | 4 | 1 | 0 | 0 | 1 | 2 | 0 | 1 | 0 | 0 | receiver_nco | AK4951 V3 + Yaesu band voltage on DB9 |
+| hl2b5up_ak4951v4_yaesu | BETA5 | EP4CE22E22C8 | 4 | 1 | 0 | 1 | 1 | 2 | 0 | 1 | 0 | 0 | receiver_nco | AK4951 V4 + ATU + Yaesu band voltage on DB9 |
 
 ## Radioberry Variants
 
