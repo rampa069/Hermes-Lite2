@@ -469,10 +469,10 @@ always @(posedge clk) begin
       iresp <= {1'b1,resp_cmd_addr,ptt_resp, resp_cmd_data}; // Queue size is 1
     end else begin
       case( resp_addr)
-        2'b00: iresp <= {3'b000,resp_addr, ext_cwkey, 1'b0, ptt_resp, 6'b000111, ~ext_txinhibit, (&clip_cnt), 8'h00, dsiq_status, VERSION_MAJOR};
-        2'b01: iresp <= {3'b000,resp_addr, ext_cwkey, 1'b0, ptt_resp, 4'h0, temperature, 4'h0, fwd_pwr};
-        2'b10: iresp <= {3'b000,resp_addr, ext_cwkey, 1'b0, ptt_resp, 4'h0, rev_pwr, 4'h0, bias_current};
-        2'b11: iresp <= {3'b000,resp_addr, ext_cwkey, 1'b0, ptt_resp, 16'h0, debug}; // Unused in HL
+        2'b00: iresp <= {3'b000,resp_addr, cw_key_status, 1'b0, ptt_resp, 6'b000111, ~ext_txinhibit, (&clip_cnt), 8'h00, dsiq_status, VERSION_MAJOR};
+        2'b01: iresp <= {3'b000,resp_addr, cw_key_status, 1'b0, ptt_resp, 4'h0, temperature, 4'h0, fwd_pwr};
+        2'b10: iresp <= {3'b000,resp_addr, cw_key_status, 1'b0, ptt_resp, 4'h0, rev_pwr, 4'h0, bias_current};
+        2'b11: iresp <= {3'b000,resp_addr, cw_key_status, 1'b0, ptt_resp, 16'h0, debug}; // Unused in HL
       endcase
     end
   end else if (~(&clip_cnt)) begin
@@ -808,7 +808,7 @@ generate
         debounce de_ptt(.clean_pb(clean_ptt_in), .pb(~io_ptt_in), .clk(clk), .msec_pulse(msec_pulse));
         assign ext_ptt = clean_ptt_in | cw_ptt;
       end else begin
-        assign ext_ptt = 1'b0;
+        assign ext_ptt = cw_ptt;
       end
 
       cw_openhpsdr cw_openhpsdr_i (
@@ -824,6 +824,18 @@ generate
       );
     end
 
+  endcase
+endgenerate
+
+logic cw_key_status;
+generate
+  case (CW)
+    2: begin
+      assign cw_key_status = cw_keydown;
+    end
+    default: begin
+      assign cw_key_status = ext_cwkey;
+    end
   endcase
 endgenerate
 
@@ -901,7 +913,7 @@ end
 
 // There are CDCs here, but we assume the data is stable ahead of time and not critical
 assign resp_data           = alt_resp_cmd_data;
-assign resp_control        = {ext_cwkey, ptt_resp, pa_exttr, pa_inttr, tx_on, cw_on, clip_cnt};
+assign resp_control        = {cw_key_status, ptt_resp, pa_exttr, pa_inttr, tx_on, cw_on, clip_cnt};
 assign temp                = temperature;
 assign fwdpwr              = fwd_pwr;
 assign revpwr              = rev_pwr;

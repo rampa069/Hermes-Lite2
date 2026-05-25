@@ -94,6 +94,7 @@ module hermeslite_core (
   output       fan_pwm                   ,
   input  [1:0] linkrx                    ,
   output [1:0] linktx                    ,
+  output       io_sidetone_out           ,
   output [3:0] debug_out
 );
 
@@ -1316,6 +1317,46 @@ end else begin
   assign i2s_bck  = 1'b0;
   assign i2s_lrck = 1'b0;
   assign i2s_mosi = 1'b0;
+
+  if (CW == 2) begin
+
+    logic [ 7:0] sidetone_vol;
+    logic [11:0] sidetone_freq;
+
+    always @(posedge clk_ad9866) begin
+      if (cmd_rqst_ad9866) begin
+        case (cmd_addr)
+          6'h0f: begin
+            sidetone_vol <= cmd_data[23:16];
+          end
+          6'h10: begin
+            sidetone_freq <= {cmd_data[15:8], cmd_data[3:0]};
+          end
+        endcase
+      end
+    end
+
+    wire signed [15:0] sidetone_audio;
+
+    cw_sidetone cw_sidetone_i (
+      .clk(clk_ad9866),
+      .tone_enb(cw_on),
+      .tonefreq(sidetone_freq),
+      .profile(cw_profile[18:12]),
+      .audiovolume(sidetone_vol),
+      .sidetone(sidetone_audio)
+    );
+
+    sigma_delta_dac sigma_delta_dac_i (
+      .clk(clk_ad9866),
+      .data_in(sidetone_audio),
+      .enable(cw_on & (sidetone_vol != 8'b0)),
+      .dac_out(io_sidetone_out)
+    );
+
+  end else begin
+    assign io_sidetone_out = 1'b0;
+  end
 
 end
 endgenerate

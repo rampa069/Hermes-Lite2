@@ -166,6 +166,8 @@ assign io_db1_1 = ~io_atu_req;
 wire [3:0] debug;
 `endif
 
+wire sidetone_wire;
+
 `ifdef BETA2
   `define HL2_BOARD 2
   `define HL2_MAC5 8'h12
@@ -244,6 +246,8 @@ wire [3:0] debug;
 `ifdef HL2_ATU_AK4951
     .io_tx_envelope_pwm_out    (),
 `elsif HL2_DEBUG_4000
+    .io_tx_envelope_pwm_out    (),
+`elsif HL2_SIDETONE_DB1
     .io_tx_envelope_pwm_out    (),
 `elsif BETA5
     .io_tx_envelope_pwm_out    (io_db1_1),
@@ -343,11 +347,16 @@ wire [3:0] debug;
     .i2s_mosi                  (),
 `endif
 `ifdef HL2_DEBUG_4000
-    .debug_out                 (debug)
+    .debug_out                 (debug),
 `else
-    .debug_out                 ()
+    .debug_out                 (),
 `endif
+    .io_sidetone_out           (sidetone_wire)
   );
+
+`ifdef HL2_SIDETONE_DB1
+assign io_db1_1 = sidetone_wire;
+`endif
 
 `ifdef HL2_DEBUG_4000
 assign io_db1_1 = debug[0];
