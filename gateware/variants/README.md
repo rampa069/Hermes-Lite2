@@ -65,6 +65,21 @@ Each subdirectory contains a build variant with its own Quartus project files an
 | CIC-only | CIC decimation only, no NCO/FIR (maximizes receiver count) |
 | 4000 | OpenHPSDR-4000 protocol format |
 
+## CW Envelope Shaping (CW_ENV_ROM)
+
+When `CW_ENV_ROM` is defined, the CW TX envelope uses a 256-entry ROM with a raised-cosine shape instead of a linear ramp. This reduces key clicks by smoothing the rise and fall edges of the CW signal.
+
+The 19-bit `tx_cwlevel` counter ramps from 0 to `MAX_CWLEVEL` (0x4D800) at the system clock rate. The upper 8 bits index the ROM:
+
+| Mode | Output | Shape |
+|---|---|---|
+| `CW_ENV_ROM` defined | `cw_env[14:0]` from ROM[tx_cwlevel[18:11]] | Raised cosine (sin²) |
+| `CW_ENV_ROM` not defined | `tx_cwlevel[18:4]` | Linear ramp |
+
+![CW Envelope Comparison](../cw_envelope_comparison.png)
+
+The ROM curve starts slowly, accelerates through the middle, and decelerates near the top -- similar to a sin² window. This reduces spectral splatter compared to the abrupt transitions of a linear ramp.
+
 ## Building
 
 Build a single variant:
