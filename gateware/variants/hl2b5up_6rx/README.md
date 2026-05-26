@@ -30,7 +30,6 @@ Receive-only variant with 6 NCO-based receivers (full FIR filtering). Uses a spe
 | `HL2_AK4951` | 0 |
 | `HL2_EXTENDED_DEBUG_RESP` | 0 |
 | `HL2_BYPASS_VERSA` | 0 |
-| `CW_ENV_ROM` | 1 |
 
 ## Notes
 
