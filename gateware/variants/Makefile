@@ -31,9 +31,9 @@ git_status:
 release_test: git_status release
 	date=`date "+%Y%m%d"`; \
 	gitrev=`git rev-parse --short HEAD`; \
-	eval `sed -n 's/localparam.*VERSION_/VERSION_/p' ../rtl/hermeslite_core.v |sed 's/ =.* 8.d/=/'`; \
+	eval `sed -n 's/localparam.*VERSION_/VERSION_/p' ../rtl/hermeslite_core.sv |sed 's/ =.* 8.d/=/'`; \
 	dirname=../bitfiles/testing/"$${date}_$${VERSION_MAJOR}p$${VERSION_MINOR}_$${gitrev}"; \
-	rm -rf $$dirname && mkdir $$dirname && \
+	rm -rf $$dirname && mkdir -p $$dirname && \
 	(cd release; tar cf - */*.rbf */*/*.rbf) | tar xf - -C $$dirname
 
 radioberry:
