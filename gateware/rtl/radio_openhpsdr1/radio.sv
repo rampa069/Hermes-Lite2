@@ -1064,7 +1064,10 @@ always @* begin
       if (ext_keydown | cwx_keydown) begin
         // Shape CW on
         if (tx_cwlevel != MAX_CWLEVEL) tx_cwlevel_next = tx_cwlevel + 19'h01;
-        tx_qmsectimer_next = (ext_keydown & ext_ptt) ? 9'h0 : {tx_buffer_latency, 2'b00};
+        // Only an external key without PTT is delayed by tx_buffer_latency
+        // (in PRETX/CWHANG) and so extended by it here; CWX keys come out of
+        // the TX FIFO already delayed and are not extended
+        tx_qmsectimer_next = (ext_keydown & ~ext_ptt) ? {tx_buffer_latency, 2'b00} : 9'h0;
       end else begin
         // Extend CW on to match tx_buffer_latency if ext key
         if (tx_qmsectimer != 9'h00) begin
@@ -1081,6 +1084,11 @@ always @* begin
     CWHANG : begin
       cw_on = 1'b1;
       if (ext_keydown & ext_ptt) begin
+        tx_qmsectimer_next = 9'h0;
+        tx_cwlevel_next    = 19'h0;
+        tx_state_next      = CWTX;
+      end else if (cwx_keydown & ~ext_keydown) begin
+        // CWX key is already delayed by the TX FIFO: key now
         tx_qmsectimer_next = 9'h0;
         tx_cwlevel_next    = 19'h0;
         tx_state_next      = CWTX;

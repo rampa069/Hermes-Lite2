@@ -303,7 +303,7 @@ logic           hl2_reset;
 logic           qmsec_pulse, qmsec_pulse_ad9866sync;
 logic           msec_pulse, msec_pulse_ethsync;
 
-logic           atu_txinhibit, atu_txinhibit_ad9866sync;
+logic           txinhibit_ad9866, txinhibit_ad9866sync;
 
 logic        stall_req, stall_req_sync;
 logic        stall_ack, stall_ack_ad9866;
@@ -811,10 +811,10 @@ sync sync_ptt_ad9866 (
 );
 
 // CDC okay as clock is >2x faster than sig_in domain
-sync sync_atutxinhibit_ad9866 (
+sync sync_txinhibit_ad9866 (
   .clock(clk_ad9866),
-  .sig_in(atu_txinhibit),
-  .sig_out(atu_txinhibit_ad9866sync)
+  .sig_in(txinhibit_ad9866),
+  .sig_out(txinhibit_ad9866sync)
 );
 
 ad9866 #(.FAST_LNA(FAST_LNA)) ad9866_i (
@@ -825,8 +825,8 @@ ad9866 #(.FAST_LNA(FAST_LNA)) ad9866_i (
 
   .tx_data(tx_data),
   .rx_data(rx_data),
-  .tx_en(tx_on & ~atu_txinhibit_ad9866sync),
-  .cw_on(cw_on & ~atu_txinhibit_ad9866sync),
+  .tx_en(tx_on & ~txinhibit_ad9866sync),
+  .cw_on(cw_on & ~txinhibit_ad9866sync),
 
   .rxclip(rxclip),
   .rxgoodlvl(rxgoodlvl),
@@ -1015,7 +1015,7 @@ control #(
   .cmd_is_alt         (cmd_is_alt                 ),
   .cmd_requires_resp  (cmd_resprqst               ),
   
-  .atu_txinhibit      (atu_txinhibit              ),
+  .txinhibit_ad9866   (txinhibit_ad9866           ),
   .tx_on              (tx_on_iosync               ),
   .cw_on              (cw_on_iosync               ),
   .cw_keydown         (cw_keydown                 ),

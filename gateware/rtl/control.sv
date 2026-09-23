@@ -23,7 +23,7 @@ module control (
   input                      cmd_rqst           ,
   input                      cmd_is_alt         ,
   input                      cmd_requires_resp  ,
-  output                     atu_txinhibit      ,
+  output                     txinhibit_ad9866   , // ATU tune, TX inhibit input or overheat: AD9866 TX off
   input                      tx_on              ,
   input                      cw_on              ,
   output                     cw_keydown         ,
@@ -168,6 +168,7 @@ logic         use_eeprom_config = 1'b0;
 logic         hl2_reset_state = 1'b0;
 
 logic         temp_enabletx = 1'b1;
+logic         atu_txinhibit;
 
 logic int_tx_on;
 
@@ -779,6 +780,10 @@ debounce de_phone_tip(.clean_pb(ext_cwkey), .pb(~io_phone_tip), .clk(clk), .msec
 assign io_cw_keydown = cw_keydown;
 
 debounce de_txinhibit(.clean_pb(ext_txinhibit), .pb(~io_tx_inhibit), .clk(clk), .msec_pulse(msec_pulse));
+
+// Conditions that block transmit also disable the AD9866 transmitter, not only
+// the PA, T/R relay and bias (int_tx_on)
+assign txinhibit_ad9866 = atu_txinhibit | ext_txinhibit | ~temp_enabletx;
 
 debounce de_phone_ring(.clean_pb(clean_ring), .pb(~io_phone_ring), .clk(clk), .msec_pulse(msec_pulse));
 

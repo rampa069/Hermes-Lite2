@@ -66,21 +66,21 @@ logic   [8:0]     initarrayv;
 // Tool problems if below is logic
 reg     [8:0]     initarray [19:0];
 
-localparam
-  CMD_IDLE    = 2'b00,
-  CMD_TXGAIN  = 2'b01,
-  CMD_RXGAIN  = 2'b11,
-  CMD_WRITE   = 2'b10;
-
 // Command slave
-logic [1:0]       cmd_state = CMD_IDLE;
-logic [1:0]       cmd_state_next;
+// Every command leaves its SPI write pending; pending writes are issued one at
+// a time once the init sequence is done and the SPI is idle, so commands that
+// arrive during init or during another transfer are not lost.
 logic [3:0]       tx_gain = 4'hf;
-logic [3:0]       tx_gain_next = 4'hf;
+logic [3:0]       tx_gain_next;
 logic [6:0]       rx_gain = 7'b1000000;
 logic [6:0]       rx_gain_next;
+logic             pend_tx = 1'b0, pend_tx_next;
+logic             pend_rx = 1'b0, pend_rx_next;
+logic             pend_wr = 1'b0, pend_wr_next;
+logic [12:0]      wr_data = 13'h0000, wr_data_next;
+logic             spi_ready;
 
-logic [12:0]      icmd_data = 12'h000;
+logic [12:0]      icmd_data;
 
 initial begin
   // First bit is 1'b1 for write enable to that address
@@ -106,101 +106,79 @@ initial begin
   initarray[19] = {1'b0,8'h00}; // Address 0x13,
 end
 
-// Command Slave State Machine
 always @(posedge clk) begin
-  cmd_state <= cmd_state_next;
   tx_gain <= tx_gain_next;
   rx_gain <= rx_gain_next;
+  pend_tx <= pend_tx_next;
+  pend_rx <= pend_rx_next;
+  pend_wr <= pend_wr_next;
+  wr_data <= wr_data_next;
   cmd_ack <= cmd_ack_next;
 end
 
+// Init sequence finished and no transfer in progress
+assign spi_ready = rffe_ad9866_sen_n & (dut1_pc[5:1] > 5'h13);
+
 always @* begin
-  cmd_state_next = cmd_state;
   tx_gain_next = tx_gain;
   rx_gain_next = rx_gain;
+  pend_tx_next = pend_tx;
+  pend_rx_next = pend_rx;
+  pend_wr_next = pend_wr;
+  wr_data_next = wr_data;
   cmd_ack_next = cmd_ack;
-  istart = 1'b0;
+  istart       = 1'b0;
+  icmd_data    = wr_data;
 
-  icmd_data  = {cmd_data[20:16],cmd_data[7:0]};
-
-  case(cmd_state)
-
-    CMD_IDLE: begin
-      if (cmd_rqst) begin
-        cmd_ack_next = 1'b1; // Assume acknowledge
-        // Accept possible write
-        case (cmd_addr)
-          // Hermes TX Gain Setting
-          6'h09: begin
-            if (tx_gain != cmd_data[31:28]) begin
-              // Must update
-              if (rffe_ad9866_sen_n) begin
-                tx_gain_next = cmd_data[31:28];
-                cmd_state_next = CMD_TXGAIN;
-              end else begin
-                cmd_ack_next = 1'b0;
-              end
-            end
-          end
-
-          // Hermes RX Gain Setting
-          6'h0a: begin
-            // Rely on synthesis to prune
-            if (FAST_LNA != 1) begin
-              if (rx_gain != cmd_data[6:0]) begin
-                // Must update
-                if (rffe_ad9866_sen_n) begin
-                  rx_gain_next = cmd_data[6:0];
-                  cmd_state_next = CMD_RXGAIN;
-                end else begin
-                  cmd_ack_next = 1'b0;
-                end
-              end
-            end else begin
-              cmd_state_next = CMD_RXGAIN;
-            end
-          end
-
-          // Generic AD9866 write
-          6'h3b: begin
-            if (cmd_data[31:24] == 8'h06) begin
-              // Must write
-              if (rffe_ad9866_sen_n) cmd_state_next = CMD_WRITE;
-              else cmd_ack_next = 1'b0;
-            end
-          end
-
-          default: cmd_state_next = cmd_state;
-
-        endcase
+  if (cmd_rqst) begin
+    cmd_ack_next = 1'b1; // Assume acknowledge
+    case (cmd_addr)
+      // Hermes TX Gain Setting
+      6'h09: begin
+        if (tx_gain != cmd_data[31:28]) begin
+          tx_gain_next = cmd_data[31:28];
+          pend_tx_next = 1'b1;
+        end
       end
-    end
 
-    CMD_TXGAIN: begin
-      istart     = 1'b1;
-      icmd_data  = {5'h0a,4'b0100,tx_gain};
-      cmd_state_next = CMD_IDLE;
-    end
-
-    CMD_RXGAIN: begin
-      // Rely on synthesis to prune
-      if (FAST_LNA != 1) begin
-        istart          = 1'b1;
-        icmd_data[12:6] = {5'h09,2'b01};
-        icmd_data[5:0]  = rx_gain[6] ? rx_gain[5:0] : (rx_gain[5] ? ~rx_gain[5:0] : {1'b1,rx_gain[4:0]});
-        cmd_state_next  = CMD_IDLE;
-      end else begin
-        cmd_state_next  = CMD_IDLE;
+      // Hermes RX Gain Setting (with FAST_LNA the gain goes through the TX pins)
+      6'h0a: begin
+        if ((FAST_LNA != 1) && (rx_gain != cmd_data[6:0])) begin
+          rx_gain_next = cmd_data[6:0];
+          pend_rx_next = 1'b1;
+        end
       end
-    end
 
-    CMD_WRITE: begin
+      // Generic AD9866 write, one can be pending
+      6'h3b: begin
+        if (cmd_data[31:24] == 8'h06) begin
+          if (pend_wr) begin
+            cmd_ack_next = 1'b0; // Missed, previous write still pending
+          end else begin
+            wr_data_next = {cmd_data[20:16],cmd_data[7:0]};
+            pend_wr_next = 1'b1;
+          end
+        end
+      end
+
+      default: ;
+    endcase
+  end else if (spi_ready) begin
+    if (pend_tx) begin
+      istart       = 1'b1;
+      icmd_data    = {5'h0a,4'b0100,tx_gain};
+      pend_tx_next = 1'b0;
+    end else if (pend_rx) begin
       istart          = 1'b1;
-      icmd_data       = {cmd_data[20:16],cmd_data[7:0]};
-      cmd_state_next  = CMD_IDLE;
+      icmd_data[12:6] = {5'h09,2'b01};
+      icmd_data[5:0]  = rx_gain[6] ? rx_gain[5:0] : (rx_gain[5] ? ~rx_gain[5:0] : {1'b1,rx_gain[4:0]});
+      pend_rx_next    = 1'b0;
+    end else if (pend_wr) begin
+      istart       = 1'b1;
+      icmd_data    = wr_data;
+      pend_wr_next = 1'b0;
     end
-
-  endcase
+  end
 end
 
 // SPI interface

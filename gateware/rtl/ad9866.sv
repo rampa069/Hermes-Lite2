@@ -126,6 +126,7 @@ generate if (FAST_LNA == 1) begin: FAST_LNA
   logic             en_tx_gain = 1'b0;
   logic             pga5_d1;
   logic             update_gain = 1'b0;
+  logic             tx_first = 1'b1;   // first TX word after tx_en, still holds {gain, x}
 
   always @(posedge clk) begin
     if (cmd_rqst) begin
@@ -164,7 +165,10 @@ generate if (FAST_LNA == 1) begin: FAST_LNA
         pga5_d1 <= update_gain;
         rffe_ad9866_tx <= tx_data_d1[5:0];
         rffe_ad9866_pga5 <= 1'b0;
-        rffe_ad9866_txsync <= ~pga5_d1; // No TX transaction completion if fast LNA update
+        // No TX transaction completion if fast LNA update, nor for the first
+        // word after TX is enabled: tx_data_d1 still holds the RX gain word
+        rffe_ad9866_txsync <= ~pga5_d1 & ~tx_first;
+        tx_first <= 1'b0;
       end else begin
         rffe_ad9866_tx <= tx_data_d1[11:6];
         rffe_ad9866_pga5 <= pga5_d1;
@@ -173,6 +177,7 @@ generate if (FAST_LNA == 1) begin: FAST_LNA
     end else begin
       tx_data_d1 <= {gain,tx_data[5:0]};
       pga5_d1 <= update_gain;
+      tx_first <= 1'b1;
       rffe_ad9866_tx <= tx_data_d1[11:6];
       rffe_ad9866_txsync <= 1'b0;
       rffe_ad9866_pga5 <= pga5_d1;

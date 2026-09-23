@@ -105,8 +105,8 @@ logic [           7:0] vna_mic_msb, vna_mic_lsb;
 logic [           1:0] discover_state                            ;
 logic                  discover_rst                              ;
 
-logic [6:0] tx_buffer_latency = 7'h0a ; // Default to 10ms
-logic [4:0] ptt_hang_time     = 5'h04 ; // Default to 4 ms
+logic [6:0] tx_buffer_latency = 7'h14 ; // Default to 20ms, as radio.sv
+logic [4:0] ptt_hang_time     = 5'h0c ; // Default to 12ms, as radio.sv
 logic [9:0] cw_hang_time      = 10'h00;
 logic [7:0] pkt_cnt           = 8'h00 ;
 logic [1:0] sample_rate       = 2'h0  ;
@@ -386,7 +386,7 @@ always @* begin
         3'h0: begin
           udp_data_next = ep6_seq_no[7:0];
           ep6_seq_no_next = ep6_seq_no + 20'd1;
-          bs_cnt_next = bs_cnt - 7'd1;
+          bs_cnt_next = (bs_cnt != 7'd0) ? bs_cnt - 7'd1 : 7'd0; // saturate: no wrap to 127
           state_next = SYNC_RESP;
         end
         default: udp_data_next = 8'hxx;
