@@ -1,14 +1,15 @@
-# Hermes-Lite 2 Iambic CW Keyer with Sidetone
+# Hermes-Lite 2 Iambic CW Keyer
 
-This variant is based on `hl2b5up_main` with iambic CW keyer and local sidetone output.
+This variant is based on `hl2b5up_main` with the iambic CW keyer in the FPGA. It has 2 receivers instead of 4 to leave timing margin.
 
 ## Differences from hl2b5up_main
 
 | Parameter | hl2b5up_main | hl2b5up_main_iambic |
 |---|---|---|
+| `HL2_NR` | 4 | 2 |
 | `HL2_CW` | 1 (straight key) | 2 (iambic keyer) |
-| `HL2_SIDETONE_DB1` | not defined | 1 |
-| Sidetone files | not included | cw_sidetone.v + sigma_delta_dac.sv |
+
+With 4 receivers plus the keyer and DB1 sidetone the design used 96% of the LEs and failed setup timing on `clock_153p6MHz` (-0.082 ns). With 2 receivers and no DB1 sidetone it uses 78% of the LEs and meets timing on all corners.
 
 ## CW Keyer
 
@@ -33,33 +34,23 @@ Additional commands: `0x0f` (CW PTT delay, sidetone volume/frequency), `0x10` (C
 
 Users with a straight key can set `keyer_mode=00`; the dash paddle (ring) then acts as a straight key.
 
-## Sidetone Output (DB1-1)
+## Sidetone Output (disabled)
 
-A 1-bit sigma-delta DAC outputs sidetone audio on **DB1 pin 1** (FPGA PIN_72, `io_db1_1`). This replaces the TX envelope PWM output used in other variants.
+`HL2_SIDETONE_DB1` is not defined, so **DB1 pin 1** (FPGA PIN_72, `io_db1_1`) carries the TX envelope PWM output, as in `hl2b5up_main`. The `cw_sidetone` and `sigma_delta_dac` modules are still instantiated in `hermeslite_core.sv` for CW=2, but their output is unconnected and Quartus removes them.
 
-The sidetone is active when CW TX is keyed and the sidetone volume (command `0x0f`, bits [23:16]) is non-zero.
-
-### External Filter
-
-Connect to DB1 as follows:
+To route the sidetone to DB1-1 again, add this to `hermeslite.qsf`:
 
 ```
-DB1 pin 1 (sidetone) ---[ 1kΩ ]---+---> audio out
-                                   |
-                                [ 10nF ]
-                                   |
-DB1 pin 10 (GND) -----------------+---> GND
+set_global_assignment -name VERILOG_MACRO "HL2_SIDETONE_DB1=1"
 ```
 
-- Cutoff frequency: ~16 kHz (well above audio range)
-- The 3.3V FPGA output provides enough level for headphones or a small amplifier
-- For speaker use, add an LM386 or similar audio amplifier after the RC filter
+Then connect an RC low-pass filter to DB1 (1 kΩ series, 10 nF to GND on pin 10, ~16 kHz cutoff) and add an audio amplifier if you want to drive a speaker. That adds logic, so check timing, especially with more receivers.
 
 ### DB1 Pin Reference (B5+)
 
 | DB1 Pin | FPGA | Function in this variant |
 |---|---|---|
-| 1 | PIN_72 | **Sidetone audio output** |
+| 1 | PIN_72 | TX envelope PWM |
 | 2 | PIN_76 | UART RX |
 | 3 | PIN_77 | UART TX |
 | 4 | PIN_80 | Fan PWM |
@@ -68,17 +59,14 @@ DB1 pin 10 (GND) -----------------+---> GND
 | 8 | - | Vlvds |
 | 10 | - | GND |
 
-## RTL Changes
+## RTL Support
 
-### New files
+These RTL changes support the iambic keyer and the optional sidetone output:
 
 - `rtl/sigma_delta_dac.sv` - 1st-order sigma-delta modulator (16-bit input, 1-bit output at 76.8 MHz)
-
-### Modified files
-
 - `rtl/control.sv` - CW=2 without AK4951 now uses `cw_ptt` for transmitter keying; upstream status reports `cw_keydown` (keyer output) instead of raw paddle input
 - `rtl/hermeslite_core.sv` - new `io_sidetone_out` port; instantiates `cw_sidetone` and `sigma_delta_dac` in the non-AK4951 branch when CW=2
-- `rtl/hermeslite.v` - routes sidetone to `io_db1_1` when `HL2_SIDETONE_DB1` is defined
+- `rtl/hermeslite.v` - routes sidetone to `io_db1_1` only when `HL2_SIDETONE_DB1` is defined
 
 ### Signal path
 
@@ -86,8 +74,6 @@ DB1 pin 10 (GND) -----------------+---> GND
 Phone tip/ring → debounce → cw_openhpsdr (iambic keyer) → cw_keydown
                                                            ↓
                                                     radio.sv (CW TX)
-                                                           ↓
-              cw_sidetone.v → sigma_delta_dac.sv → DB1-1 (sidetone out)
 ```
 
 ## Building

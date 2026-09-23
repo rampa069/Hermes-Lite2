@@ -10,7 +10,7 @@ Each subdirectory contains a build variant with its own Quartus project files an
 | [hl2b3to4_main](hl2b3to4_main/) | EP4CE22 | 4 | 1 | 1 | 0 | 1 | 1 | 0 | 1 | 0 | - | NCO | Beta 3-4 hardware |
 | [hl2b3to4_cicrx](hl2b3to4_cicrx/) | EP4CE22 | 10 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | - | CIC-only | RX-only, Beta 3-4 |
 | [hl2b5up_main](hl2b5up_main/) | EP4CE22 | 4 | 1 | 1 | 1 | 1 | 1 | 0 | 1 | 1 | ROM | NCO | **Reference build** |
-| [hl2b5up_main_iambic](hl2b5up_main_iambic/) | EP4CE22 | 4 | 1 | 2 | 1 | 1 | 1 | 0 | 1 | 1 | ROM | NCO | Iambic keyer + sidetone on DB1 |
+| [hl2b5up_main_iambic](hl2b5up_main_iambic/) | EP4CE22 | 2 | 1 | 2 | 1 | 1 | 1 | 0 | 1 | 1 | ROM | NCO | Iambic keyer, 2 RX for timing margin |
 | [hl2b5up_cicrx](hl2b5up_cicrx/) | EP4CE22 | 10 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | ROM | CIC-only | RX-only |
 | [hl2b5up_6rx](hl2b5up_6rx/) | EP4CE22 | 6 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | - | NCO | RX-only, 6 NCO receivers |
 | [hl2b5up_4000](hl2b5up_4000/) | EP4CE22 | 5 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | ROM | 4000 | HPSDR-4000 protocol |
@@ -53,7 +53,7 @@ Each subdirectory contains a build variant with its own Quartus project files an
 | `HL2_BYPASS_VERSA` | Bypass Versa clocking (bypassversa only) |
 | `HL2_BANDV_YAESU` | Yaesu band voltage output (yaesu variants only) |
 | `HL2_ATU_AK4951` | Combined ATU + AK4951 mode (ak4951v4 variants only) |
-| `HL2_SIDETONE_DB1` | Sidetone output on DB1 (iambic variant only) |
+| `HL2_SIDETONE_DB1` | Sidetone output on DB1 (requires CW=2; not enabled in any variant) |
 | `HL2_DEBUG_4000` | HPSDR-4000 debug mode (4000 variant only) |
 | `FPGA_TYPE` | 1=16K LE, 2=25K LE (Radioberry) |
 

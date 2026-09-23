@@ -38,7 +38,7 @@
 
 set_global_assignment -name VERILOG_MACRO "BETA5=1"
 set_global_assignment -name VERILOG_MACRO "USE_ALTSYNCRAM=1"
-set_global_assignment -name VERILOG_MACRO "HL2_NR=4"
+set_global_assignment -name VERILOG_MACRO "HL2_NR=2"
 set_global_assignment -name VERILOG_MACRO "HL2_NT=1"
 set_global_assignment -name VERILOG_MACRO "HL2_UART=1"
 set_global_assignment -name VERILOG_MACRO "HL2_ATU=1"
@@ -49,7 +49,6 @@ set_global_assignment -name VERILOG_MACRO "HL2_AK4951=0"
 set_global_assignment -name VERILOG_MACRO "HL2_EXTENDED_DEBUG_RESP=1"
 set_global_assignment -name VERILOG_MACRO "HL2_BYPASS_VERSA=0"
 set_global_assignment -name VERILOG_MACRO "CW_ENV_ROM=1"
-set_global_assignment -name VERILOG_MACRO "HL2_SIDETONE_DB1=1"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY build
 source ../../boards/hl2b5up/general.tcl
 source ../../boards/hl2b5up/pins.tcl
