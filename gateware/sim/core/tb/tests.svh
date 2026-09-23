@@ -1,6 +1,15 @@
 // Tests for tb_hl2 (included inside the tb_hl2 module).
 // Each test is a task; run_test() dispatches on the +TEST name.
 
+// Receivers in the variant under test (HL2_NR from its .qsf); the rx test uses
+// up to 4 of them
+`ifdef HL2_NR
+localparam int VARIANT_NR = `HL2_NR;
+`else
+localparam int VARIANT_NR = 4;
+`endif
+localparam int RX_TEST_NR = (VARIANT_NR < 4) ? VARIANT_NR : 4;
+
 //------------------------------------------------------------------------------
 // boot: power up sequence, PHY/Versa/EEPROM/AD9866 configuration, static IP
 task automatic test_boot();
@@ -95,7 +104,7 @@ task automatic test_discovery();
   check(d[11] == 8'h80, $sformatf("EEPROM config bits (%02h)", d[11]));
   check(get32(d, 13) == cfg_static_ip, "static IP in payload");
   check(get16(d, 17) == cfg_alt_mac, "alternate MAC in payload");
-  check(d[19] == 8'd4, $sformatf("number of receivers 4 (%0d)", d[19]));
+  check(d[19] == 8'(VARIANT_NR), $sformatf("number of receivers %0d (%0d)", VARIANT_NR, d[19]));
   check(d[20][5:0] == 6'd5, $sformatf("board revision 5 (%0d)", d[20][5:0]));
   check(d[21] == 8'd102, $sformatf("gateware minor version 102 (%0d)", d[21]));
 
@@ -227,7 +236,7 @@ task automatic check_rx_tone(input int r, input real fs, input real df, input in
 endtask
 
 //------------------------------------------------------------------------------
-// rx: four receivers at 192 ksps, tones on the ADC
+// rx: up to four receivers (RX_TEST_NR) at 192 ksps, tones on the ADC
 task automatic test_rx();
   bit ok;
   real fs = 192000.0;
@@ -242,7 +251,7 @@ task automatic test_rx();
   ad9866.set_tone(1, 7.098e6, 0.25);
   ad9866.set_tone(2, 14.205e6, 0.25);
 
-  set_config(2, 4, 32'h0000_0004);          // 192k, 4 receivers, duplex
+  set_config(2, RX_TEST_NR, 32'h0000_0004); // 192k, RX_TEST_NR receivers, duplex
   set_reg(6'h01, 32'd10_000_000);           // TX
   set_reg(6'h02, 32'd10_000_000);           // RX1: tone A at +3 kHz
   set_reg(6'h03, 32'd10_010_000);           // RX2: tone A at -7 kHz
@@ -258,12 +267,18 @@ task automatic test_rx();
   pk0 = ep6_packets - n0;
 
   check_rx_tone(0, fs,  3000.0, 1024, lvl[0]);
-  check_rx_tone(1, fs, -7000.0, 1024, lvl[1]);
-  check_rx_tone(2, fs, -2000.0, 1024, lvl[2]);
-  check_rx_tone(3, fs,  5000.0, 1024, lvl[3]);
-  check_near(lvl[1] - lvl[0], 0.0, 0.2, "RX2 vs RX1 level for the same tone (dB)");
-  check_near(lvl[2] - lvl[0], 0.0, 0.2, "RX3 vs RX1 level for tones of equal amplitude (dB)");
-  check_near(lvl[3] - lvl[0], 0.0, 0.2, "RX4 vs RX1 level for tones of equal amplitude (dB)");
+  if (RX_TEST_NR > 1) begin
+    check_rx_tone(1, fs, -7000.0, 1024, lvl[1]);
+    check_near(lvl[1] - lvl[0], 0.0, 0.2, "RX2 vs RX1 level for the same tone (dB)");
+  end
+  if (RX_TEST_NR > 2) begin
+    check_rx_tone(2, fs, -2000.0, 1024, lvl[2]);
+    check_near(lvl[2] - lvl[0], 0.0, 0.2, "RX3 vs RX1 level for tones of equal amplitude (dB)");
+  end
+  if (RX_TEST_NR > 3) begin
+    check_rx_tone(3, fs,  5000.0, 1024, lvl[3]);
+    check_near(lvl[3] - lvl[0], 0.0, 0.2, "RX4 vs RX1 level for tones of equal amplitude (dB)");
+  end
 
   check(ep6_seq_errors == 0, $sformatf("EP6 sequence numbers contiguous (%0d gaps)", ep6_seq_errors));
   check(ep6_sync_errors == 0, "EP6 frames start with 7F 7F 7F");
@@ -557,7 +572,7 @@ always @(io_db1_1) if (st_measure) st_edges++;
 always @(posedge `CORE.clk_ad9866) if (st_measure) begin st_total++; if (io_db1_1) st_high++; end
 
 //------------------------------------------------------------------------------
-// cw_iambic: paddles -> iambic keyer -> CW envelope -> DAC, sidetone, status
+// cw_iambic: paddles -> iambic keyer -> CW envelope -> DAC, sidetone (if HL2_SIDETONE_DB1), status
 task automatic test_cw_iambic();
   bit  ok;
   elem_t e[$];
@@ -567,9 +582,20 @@ task automatic test_cw_iambic();
   real t_key, fc;
   int  n_dot_resp, n_ptt_resp, r0;
 
+`ifndef HL2_CW
+  info("cw_iambic skipped: HL2_CW not defined in this variant");
+  return;
+`else
+  if (`HL2_CW != 2) begin
+    // Without the iambic keyer the paddles never key CW and the test would hang
+    info($sformatf("cw_iambic skipped: variant has HL2_CW=%0d, needs 2 (iambic keyer)", `HL2_CW));
+    return;
+  end
+`endif
+
   tx_bring_up(ok);
   if (!ok) return;
-  cw_setup(1, 60);                  // Mode A, 60 WPM, PTT delay 5 ms, hang 30 ms
+  cw_setup(1, 60);                 // Mode A, 60 WPM, PTT delay 5 ms, hang 30 ms
   flush_cmds();
   wait_ms(1.0);
 
@@ -623,11 +649,15 @@ task automatic test_cw_iambic();
   check(n_dot_resp > 0, $sformatf("EP6 C0 key bit seen while keyed (%0d frames)", n_dot_resp));
   check(n_ptt_resp > 0, $sformatf("EP6 C0 PTT bit seen during CW (%0d frames)", n_ptt_resp));
 
+`ifdef HL2_SIDETONE_DB1
   // Sidetone on DB1-1 (1 bit sigma-delta, 600 Hz, volume 64)
   info($sformatf("sidetone DB1-1: %0d edges in 4 ms, high %0.3f of the time", st_edges,
                  real'(st_high) / (st_total + 1)));
   check(st_edges > 100, $sformatf("sidetone DB1-1 toggles while keyed (%0d edges)", st_edges));
   check_near(real'(st_high) / (st_total + 1), 0.5, 0.1, "sidetone DB1-1 average density (offset binary)");
+`else
+  info("sidetone DB1-1 checks skipped: HL2_SIDETONE_DB1 not defined in this variant");
+`endif
   check(pa_inttr == 1'b0 && pa_exttr == 1'b0, "PA/TR off after the CW hang time");
 
   // One dash

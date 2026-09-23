@@ -60,10 +60,10 @@ Requirements: Verilator 5 (built and tested with 5.048), Python 3. No Quartus.
 | boot | reset sequence timing, MDIO PHY setup, Versa init, EEPROM reads, AD9866 SPI init, static IP |
 | discovery | discovery reply contents, broadcast/unicast, port 1025, running flag |
 | arp_icmp | ARP reply, ping with 32 and 1000 bytes |
-| rx | 4 receivers at 192 ksps: tone frequency, level, image rejection, EP6 stream |
+| rx | up to 4 receivers (HL2_NR) at 192 ksps: tone frequency, level, image rejection, EP6 stream |
 | rx_rates | 48/96/192/384 ksps |
 | tx | TX I/Q to DAC: sideband, carrier/image suppression, level, PTT timing, PA/TR outputs |
-| cw_iambic | paddles, iambic keyer, CW envelope on air, EP6 key/PTT bits, sidetone on DB1-1 |
+| cw_iambic | paddles, iambic keyer, CW envelope on air, EP6 key/PTT bits, sidetone on DB1-1 (if HL2_SIDETONE_DB1); skipped unless HL2_CW=2 |
 | cw_straight | keyer mode 00 with the ring as straight key |
 | cwx | CW keyed through the EP2 I samples: element lengths and gaps, second element from the CW hang |
 | responses | EP6 C0-C4 slots, slow ADC values, ADC overload, TX inhibit bit |
